@@ -11,3 +11,148 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Store {
+  id              String        @id @default(cuid())
+  name            String
+  location        String?
+  timezone        String        @default("America/New_York")
+  defaultLeadDays Int           @default(7)
+  createdAt       DateTime      @default(now())
+  users           User[]
+  invites         StoreInvite[]
+  devices         Device[]
+  pullItems       PullItem[]
+
+  storeProducts StoreProduct[]
+}
+
+model User {
+  id                String        @id @default(cuid())
+  storeId           String
+  store             Store         @relation(fields: [storeId], references: [id])
+  name              String
+  username          String
+  role              Role          @default(ASSOCIATE)
+  status            UserStatus    @default(PENDING)
+  email             String?       @unique
+  passwordHash      String?
+  pinHash           String
+  failedPinAttempts Int           @default(0)
+  lockedAt          DateTime?
+  approvedAt        DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  invites           StoreInvite[]
+  devices           Device[]
+  createdPullItems  PullItem[]    @relation("PullItemCreatedBy")
+  pullEvents        PullEvent[]
+
+  @@unique([storeId, username])
+}
+
+model StoreInvite {
+  id          String    @id @default(cuid())
+  storeId     String
+  store       Store     @relation(fields: [storeId], references: [id])
+  createdById String
+  createdBy   User      @relation(fields: [createdById], references: [id])
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model Device {
+  id         String    @id @default(cuid())
+  storeId    String
+  store      Store     @relation(fields: [storeId], references: [id])
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id])
+  tokenHash  String    @unique
+  label      String?
+  lastSeenAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+model Product {
+  upc           String         @id
+  name          String?
+  brand         String?
+  category      String?
+  source        String?
+  fetchedAt     DateTime       @default(now())
+  pullItems     PullItem[]
+  storeProducts StoreProduct[]
+}
+
+model StoreProduct {
+  id           String  @id @default(cuid())
+  storeId      String
+  store        Store   @relation(fields: [storeId], references: [id])
+  upc          String
+  product      Product @relation(fields: [upc], references: [upc])
+  itemNumber   String?
+  aisle        String?
+  categoryName String?
+  section      String?
+  shelf        String?
+
+  @@unique([storeId, upc])
+}
+
+model PullItem {
+  id          String      @id @default(cuid())
+  storeId     String
+  store       Store       @relation(fields: [storeId], references: [id])
+  upc         String
+  product     Product     @relation(fields: [upc], references: [upc])
+  productName String?
+  expiryDate  DateTime?   @db.Date
+  pullDate    DateTime    @db.Date
+  status      PullStatus  @default(PENDING)
+  pulledAt    DateTime?
+  createdById String
+  createdBy   User        @relation("PullItemCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  events      PullEvent[]
+
+  @@index([storeId, status, pullDate])
+}
+
+model PullEvent {
+  id         String     @id @default(cuid())
+  pullItemId String
+  pullItem   PullItem   @relation(fields: [pullItemId], references: [id])
+  userId     String
+  user       User       @relation(fields: [userId], references: [id])
+  action     PullAction
+  createdAt  DateTime   @default(now())
+}
+
+enum Role {
+  MANAGER
+  MODERATOR
+  ASSOCIATE
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  DISABLED
+}
+
+enum PullStatus {
+  PENDING
+  PULLED
+  SKIPPED
+}
+
+enum PullAction {
+  CREATED
+  EDITED
+  PULLED
+  SKIPPED
+}
