@@ -33,7 +33,8 @@ Barcode-scan tool for retail teams to track product pull dates. Keep this file u
 | `components.json` | shadcn/ui config (style `base-nova`, Base UI primitives, CSS variables, lucide icons) |
 | `lib/utils.ts` | shadcn `cn()` class helper (re-exported from the `cn` package) |
 | `lib/db.ts` | The single shared Prisma client (`db`), using `@prisma/adapter-pg` |
-| `prisma/schema.prisma` | Prisma schema, owned by Ranok. Do not edit. Models: `Store`, `User`, `StoreInvite`, `Device`, `Product`, `PullItem`, `PullEvent`; enums: `Role`, `UserStatus`, `PullStatus`, `PullAction` |
+| `prisma/schema.prisma` | Prisma schema, owned by Ranok. Do not edit. Models: `Store`, `User`, `StoreInvite`, `Device`, `Product`, `StoreProduct`, `PullItem`, `PullEvent`; enums: `Role`, `UserStatus`, `PullStatus`, `PullAction` |
+| `prisma/migrations/` | Prisma migration history. `20261105041728_init` is the first migration |
 | `prisma7.config.ts` | Prisma CLI config (schema path, migrations path, `DATABASE_URL` via dotenv) |
 | `.env` / `.env.example` | `DATABASE_URL`. `.env` is gitignored, `.env.example` is committed |
 | `README.md`, `CLAUDE.md`, `AGENTS.md` | Project docs |
@@ -53,3 +54,4 @@ Barcode-scan tool for retail teams to track product pull dates. Keep this file u
 - 2026-11-04: Wrote the Prisma schema from Ranok's spec, as a one-time exception to the no-schema-changes rule. The rule still stands. Only `prisma format` and `prisma validate` were run: no migration exists yet, the database is unchanged, and the generated client has not been rebuilt.
 - 2026-11-04: Fixed `prisma/schema.prisma` at Ranok's request after hand edits left it failing validation (duplicate `PullItem.user`). Removed the unnamed `User.pullItems` / `PullItem.user` / `PullItem.userId` relation. Added optional `PullItem.updatedById` / `updatedBy` as the missing side of `User.updatedPullItems` (`PullItemUpdatedBy`). Made `PullItem.product` required, since `upc` is required: an unknown UPC needs a bare `Product` row first. No migration has been run.
 - 2026-11-04: Removed `PullItem.updatedById` / `updatedBy` and `User.updatedPullItems` at Ranok's request. `PullEvent` is the record of who changed a pull item.
+- 2026-11-04: Ran the first migration (`20261105041728_init`) with `prisma migrate dev --name init`, as a one-time exception approved by Ranok. It created the local `shelfwatch` database and all tables, including Ranok's `StoreProduct` model. The "Don't run migrations" rule still stands.
