@@ -18,7 +18,7 @@ Barcode-scan tool for retail teams to track product pull dates. Keep this file u
 - All database and business logic goes in plain functions under `lib/` (for example `lib/pulls.ts`).
 - Server actions and route handlers only call `lib/` functions. No Prisma calls in components or actions.
 - Don't run migrations.
-- Phone-first touch sizes: buttons default `h-12 text-base`, `sm` at least `h-10`, `lg` `h-14`; inputs `h-12 text-base`.
+- `components/ui/button.tsx` and `components/ui/input.tsx` keep shadcn's stock sizes (button default `h-8`, `sm` `h-7`, `lg` `h-9`; input `h-8`). For phone-first touch sizes, set them where the component is used with `className`, as the landing page and register form do (`h-12 text-base`).
 - Don't change theme colors or radius in `app/globals.css`; Ranok sets those.
 - Use shadcn as much as possible: components from `components/ui/` and theme tokens (`bg-background`, `bg-muted`, `bg-primary`, `text-muted-foreground`, and so on). No hardcoded colors in pages or components.
 
@@ -26,15 +26,18 @@ Barcode-scan tool for retail teams to track product pull dates. Keep this file u
 
 | Path | Purpose |
 | --- | --- |
-| `app/page.tsx` | Landing page (server component), built from shadcn `Card` and `buttonVariants` with theme tokens only. Bricolage Grotesque headline font is loaded here. Links to `/register` and `/signin`, which don't exist yet |
+| `app/page.tsx` | Landing page (server component), built from shadcn `Card` and `buttonVariants` with theme tokens only. Bricolage Grotesque headline font is loaded here. Links to `/register` and `/signin` (`/signin` doesn't exist yet) |
 | `app/layout.tsx` | Root layout, page metadata (title "ShelfWatch"), and `ThemeProvider` |
 | `app/generated/prisma/` | Generated Prisma client (gitignored, rebuilt by `npm install` / `prisma generate`) |
+| `app/(auth)/register/page.tsx` | Signup page at `/register`, the URL the landing page links to. Renders `RegisterForm`, with a back arrow to `/` before the ShelfWatch name |
 | `app/ui-test/page.tsx` | Temporary page showing every button variant/size and an input, for checking touch sizes on a phone. Ranok will delete it |
-| `components/ui/` | shadcn/ui components: `button`, `input`, `label`, `card`, `separator` only. Add more only when asked |
+| `components/ui/` | shadcn/ui components: `button`, `input`, `label`, `card`, `separator`, `field`, `select` only. Add more only when asked |
+| `components/auth/register-form.tsx` | Signup form (client component, TanStack Form). Store info section first, then personal info, stacked on phones. From `lg` up each section has its heading on the left and a 2-column field grid on the right. Validates on submit; no submit logic yet |
 | `components/theme-provider.tsx` | shadcn wrapper around the `next-themes` provider |
 | `components/mode-toggle.tsx` | One-click light/dark button with shadcn's animated Sun/Moon icons |
 | `components.json` | shadcn/ui config (style `base-nova`, Base UI primitives, CSS variables, lucide icons) |
 | `lib/utils.ts` | shadcn `cn()` class helper (re-exported from the `cn` package) |
+| `lib/validations/register.ts` | Zod `registerSchema` for signup, the timezone list, and `PIN_LENGTH` |
 | `lib/db.ts` | The single shared Prisma client (`db`), using `@prisma/adapter-pg` |
 | `prisma/schema.prisma` | Prisma schema, owned by Ranok. Do not edit. Models: `Store`, `User`, `StoreInvite`, `Device`, `Product`, `StoreProduct`, `PullItem`, `PullEvent`; enums: `Role`, `UserStatus`, `PullStatus`, `PullAction` |
 | `prisma/migrations/` | Prisma migration history. `20261105041728_init` is the first migration |
@@ -62,3 +65,5 @@ Barcode-scan tool for retail teams to track product pull dates. Keep this file u
 - 2026-11-05: Added dark mode the shadcn way, at Ranok's request: `next-themes`, `ThemeProvider` in the root layout, default theme `system`. This replaces the system-only setup from 2026-11-02. In `app/globals.css` the `dark` variant is now `&:is(.dark *)` and the `prefers-color-scheme` block is gone, so dark colors come from the existing `.dark` tokens. `ModeToggle` is one click (no dropdown). `disableTransitionOnChange` is deliberately left off the provider because it would cancel the icon animation.
 - 2026-11-05: Recolored the landing page at Ranok's request because the first version was too colorful. All hardcoded colors are gone. Sections use neutral theme tokens with `primary` as the only accent, the tiles are shadcn `Card`s, and buttons use standard variants. Layout unchanged.
 - 2026-11-05: At Ranok's request, "How it works" uses the same `bg-background` as the hero. A shadcn `Separator` (added for this) now divides it from "Made for the store floor".
+- 2026-11-05: Added the signup form at Ranok's request, UI only, with no backend or submit logic. Uses `@tanstack/react-form` and `zod`, plus shadcn `field` and `select`. Validation schemas live in `lib/validations/`. The route is `/register` to match the landing page links. Field names follow the schema (`username`, `pin` for `pinHash`), except `storeName` for `Store.name` because `name` is the user's. `email` is optional, matching the schema. `password` is required here even though nullable in the schema, because the signup user is the manager. Assumed rules until Ranok confirms: 4-digit PIN, password 8 to 72 characters, username 3 to 30 characters, US timezones only.
+- 2026-11-05: At Ranok's request, the touch-size rule now matches the code. `button` and `input` stay at shadcn's stock sizes, as they have been since `de352a1`, replacing the 2026-11-02 resize. Larger touch sizes are set per use with `className`.
