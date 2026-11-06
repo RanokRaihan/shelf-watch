@@ -40,6 +40,10 @@ const defaultValues: RegisterValues = {
   pin: "",
 };
 
+function handleRegister(values: RegisterValues) {
+  console.log(values);
+}
+
 const CONTROL_SIZE = "h-12 px-3 text-base md:text-base";
 
 function isFieldInvalid(field: AnyFieldApi) {
@@ -113,6 +117,7 @@ export function RegisterForm() {
   const form = useForm({
     defaultValues,
     validators: { onSubmit: registerSchema },
+    onSubmit: ({ value }) => handleRegister(value),
   });
 
   return (

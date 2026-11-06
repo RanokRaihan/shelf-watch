@@ -29,10 +29,10 @@ Barcode-scan tool for retail teams to track product pull dates. Keep this file u
 | `app/page.tsx` | Landing page (server component), built from shadcn `Card` and `buttonVariants` with theme tokens only. Bricolage Grotesque headline font is loaded here. Links to `/register` and `/signin` (`/signin` doesn't exist yet) |
 | `app/layout.tsx` | Root layout, page metadata (title "ShelfWatch"), and `ThemeProvider` |
 | `app/generated/prisma/` | Generated Prisma client (gitignored, rebuilt by `npm install` / `prisma generate`) |
+| `app/not-found.tsx` | Two-column 404 page: message and home link on the left, a shelf with one empty spot on the right, with a scan line sweeping across the shelf and back on a loop, easing at both ends and slowing without stopping at the gap in the middle (off for reduced motion). Theme tokens only. Loads Bricolage Grotesque like the landing page |
 | `app/(auth)/register/page.tsx` | Signup page at `/register`, the URL the landing page links to. Renders `RegisterForm`, with a back arrow to `/` before the ShelfWatch name |
-| `app/ui-test/page.tsx` | Temporary page showing every button variant/size and an input, for checking touch sizes on a phone. Ranok will delete it |
 | `components/ui/` | shadcn/ui components: `button`, `input`, `label`, `card`, `separator`, `field`, `select` only. Add more only when asked |
-| `components/auth/register-form.tsx` | Signup form (client component, TanStack Form). Store info section first, then personal info, stacked on phones. From `lg` up each section has its heading on the left and a 2-column field grid on the right. Validates on submit; no submit logic yet |
+| `components/auth/register-form.tsx` | Signup form (client component, TanStack Form). Store info section first, then personal info, stacked on phones. From `lg` up each section has its heading on the left and a 2-column field grid on the right. Validates on submit. `handleRegister` only logs the values, including password and PIN, to the browser console for now; remove that when the backend is added |
 | `components/theme-provider.tsx` | shadcn wrapper around the `next-themes` provider |
 | `components/mode-toggle.tsx` | One-click light/dark button with shadcn's animated Sun/Moon icons |
 | `components.json` | shadcn/ui config (style `base-nova`, Base UI primitives, CSS variables, lucide icons) |
