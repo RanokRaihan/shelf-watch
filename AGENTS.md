@@ -20,16 +20,19 @@ Barcode-scan tool for retail teams to track product pull dates. Keep this file u
 - Don't run migrations.
 - Phone-first touch sizes: buttons default `h-12 text-base`, `sm` at least `h-10`, `lg` `h-14`; inputs `h-12 text-base`.
 - Don't change theme colors or radius in `app/globals.css`; Ranok sets those.
+- Use shadcn as much as possible: components from `components/ui/` and theme tokens (`bg-background`, `bg-muted`, `bg-primary`, `text-muted-foreground`, and so on). No hardcoded colors in pages or components.
 
 ## Files
 
 | Path | Purpose |
 | --- | --- |
-| `app/page.tsx` | Home page: a simple welcome message, no features yet |
-| `app/layout.tsx` | Root layout and page metadata (title "ShelfWatch") |
+| `app/page.tsx` | Landing page (server component), built from shadcn `Card` and `buttonVariants` with theme tokens only. Bricolage Grotesque headline font is loaded here. Links to `/register` and `/signin`, which don't exist yet |
+| `app/layout.tsx` | Root layout, page metadata (title "ShelfWatch"), and `ThemeProvider` |
 | `app/generated/prisma/` | Generated Prisma client (gitignored, rebuilt by `npm install` / `prisma generate`) |
 | `app/ui-test/page.tsx` | Temporary page showing every button variant/size and an input, for checking touch sizes on a phone. Ranok will delete it |
-| `components/ui/` | shadcn/ui components: `button`, `input`, `label`, `card` only. Add more only when asked |
+| `components/ui/` | shadcn/ui components: `button`, `input`, `label`, `card`, `separator` only. Add more only when asked |
+| `components/theme-provider.tsx` | shadcn wrapper around the `next-themes` provider |
+| `components/mode-toggle.tsx` | One-click light/dark button with shadcn's animated Sun/Moon icons |
 | `components.json` | shadcn/ui config (style `base-nova`, Base UI primitives, CSS variables, lucide icons) |
 | `lib/utils.ts` | shadcn `cn()` class helper (re-exported from the `cn` package) |
 | `lib/db.ts` | The single shared Prisma client (`db`), using `@prisma/adapter-pg` |
@@ -55,3 +58,7 @@ Barcode-scan tool for retail teams to track product pull dates. Keep this file u
 - 2026-11-04: Fixed `prisma/schema.prisma` at Ranok's request after hand edits left it failing validation (duplicate `PullItem.user`). Removed the unnamed `User.pullItems` / `PullItem.user` / `PullItem.userId` relation. Added optional `PullItem.updatedById` / `updatedBy` as the missing side of `User.updatedPullItems` (`PullItemUpdatedBy`). Made `PullItem.product` required, since `upc` is required: an unknown UPC needs a bare `Product` row first. No migration has been run.
 - 2026-11-04: Removed `PullItem.updatedById` / `updatedBy` and `User.updatedPullItems` at Ranok's request. `PullEvent` is the record of who changed a pull item.
 - 2026-11-04: Ran the first migration (`20261105041728_init`) with `prisma migrate dev --name init`, as a one-time exception approved by Ranok. It created the local `shelfwatch` database and all tables, including Ranok's `StoreProduct` model. The "Don't run migrations" rule still stands.
+- 2026-11-05: Replaced the home page with the landing page, built only with Tailwind and shadcn (no CSS modules). The scan line on the hero barcode uses `tw-animate-css` utilities.
+- 2026-11-05: Added dark mode the shadcn way, at Ranok's request: `next-themes`, `ThemeProvider` in the root layout, default theme `system`. This replaces the system-only setup from 2026-11-02. In `app/globals.css` the `dark` variant is now `&:is(.dark *)` and the `prefers-color-scheme` block is gone, so dark colors come from the existing `.dark` tokens. `ModeToggle` is one click (no dropdown). `disableTransitionOnChange` is deliberately left off the provider because it would cancel the icon animation.
+- 2026-11-05: Recolored the landing page at Ranok's request because the first version was too colorful. All hardcoded colors are gone. Sections use neutral theme tokens with `primary` as the only accent, the tiles are shadcn `Card`s, and buttons use standard variants. Layout unchanged.
+- 2026-11-05: At Ranok's request, "How it works" uses the same `bg-background` as the hero. A shadcn `Separator` (added for this) now divides it from "Made for the store floor".
