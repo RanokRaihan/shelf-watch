@@ -14,7 +14,20 @@ export const TIMEZONES = [
 
 export const PIN_LENGTH = 4;
 
-export const registerSchema = z.object({
+// Usernames are stored lowercase, so the unique index on `User.username` makes
+// duplicates case-insensitive ("Bob" and "bob" clash). Reuse this for sign-in
+// so lookups match.
+export const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(3, "Username must be at least 3 characters")
+  .max(30, "Username must be 30 characters or fewer")
+  // `*`, not `+`: an empty value only gets the min-length message. Don't use
+  // `abort: true` instead; it stops the confirm-password check in registerSchema.
+  .regex(/^[a-z0-9_.]*$/, "Use only letters, numbers, dots, and underscores");
+
+const registerFields = z.object({
   // Store
   storeName: z
     .string()
@@ -36,23 +49,37 @@ export const registerSchema = z.object({
     .trim()
     .min(1, "Enter your name")
     .max(100, "Name must be 100 characters or fewer"),
-  username: z
+  username: usernameSchema,
+  // Optional in the schema (associates), but required for the manager.
+  // Lowercased so the unique index on `User.email` is case-insensitive.
+  email: z
     .string()
     .trim()
-    .min(3, { error: "Username must be at least 3 characters", abort: true })
-    .max(30, "Username must be 30 characters or fewer")
-    .regex(
-      /^[a-zA-Z0-9_.]+$/,
-      "Use only letters, numbers, dots, and underscores",
-    ),
-  email: z.email("Enter a valid email address").or(z.literal("")),
+    .toLowerCase()
+    .min(1, "Enter your email")
+    .pipe(z.email("Enter a valid email address")),
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")
     .max(72, "Password must be 72 characters or fewer"),
+  confirmPassword: z.string().min(1, "Confirm your password"),
   pin: z
     .string()
     .regex(new RegExp(`^\\d{${PIN_LENGTH}}$`), `PIN must be ${PIN_LENGTH} digits`),
 });
+
+// Also checked on the server, since the action validates with this schema.
+export const registerSchema = registerFields.refine(
+  (values) => values.password === values.confirmPassword,
+  {
+    error: "Passwords don't match",
+    path: ["confirmPassword"],
+    // Run even when other fields fail, so the mismatch shows in the same submit.
+    when: (payload) =>
+      registerFields
+        .pick({ password: true, confirmPassword: true })
+        .safeParse(payload.value).success,
+  },
+);
 
 export type RegisterValues = z.infer<typeof registerSchema>;

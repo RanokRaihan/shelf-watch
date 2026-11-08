@@ -32,7 +32,7 @@ model User {
   storeId           String
   store             Store         @relation(fields: [storeId], references: [id])
   name              String
-  username          String
+  username          String        @unique
   role              Role          @default(ASSOCIATE)
   status            UserStatus    @default(PENDING)
   email             String?       @unique
@@ -47,8 +47,6 @@ model User {
   devices           Device[]
   createdPullItems  PullItem[]    @relation("PullItemCreatedBy")
   pullEvents        PullEvent[]
-
-  @@unique([storeId, username])
 }
 
 model StoreInvite {

@@ -1,10 +1,21 @@
 "use client";
 
 import { useForm, type AnyFieldApi } from "@tanstack/react-form";
-import type { ComponentProps, ReactNode } from "react";
+import { cn } from "cn";
+import { Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
+import { useState, type ComponentProps, type ReactNode } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { registerAction } from "@/actions/register.action";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Field,
   FieldDescription,
@@ -21,13 +32,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toFormErrors } from "@/lib/action-result";
+import type { RegisteredManager } from "@/lib/register";
 import {
   DEFAULT_TIMEZONE,
   PIN_LENGTH,
   TIMEZONES,
   registerSchema,
   type RegisterValues,
-} from "@/lib/validations/register";
+} from "@/lib/validations/register.validation";
 
 const defaultValues: RegisterValues = {
   storeName: "",
@@ -37,12 +50,9 @@ const defaultValues: RegisterValues = {
   username: "",
   email: "",
   password: "",
+  confirmPassword: "",
   pin: "",
 };
-
-function handleRegister(values: RegisterValues) {
-  console.log(values);
-}
 
 const CONTROL_SIZE = "h-12 px-3 text-base md:text-base";
 
@@ -50,11 +60,20 @@ function isFieldInvalid(field: AnyFieldApi) {
   return field.state.meta.isTouched && !field.state.meta.isValid;
 }
 
+// Zod errors arrive as `{ message }`, server errors as plain strings.
+function toFieldErrors(errors: unknown[]) {
+  return errors.map((error) =>
+    typeof error === "string" ? { message: error } : (error as { message?: string }),
+  );
+}
+
 type TextFieldProps = ComponentProps<"input"> & {
   field: AnyFieldApi;
   label: string;
   description?: string;
   fieldClassName?: string;
+  /** Adds an eye button that shows or hides the value (for `type="password"`). */
+  revealable?: boolean;
 };
 
 function TextField({
@@ -62,25 +81,55 @@ function TextField({
   label,
   description,
   fieldClassName,
+  revealable = false,
+  type,
   ...props
 }: TextFieldProps) {
   const isInvalid = isFieldInvalid(field);
+  const [isRevealed, setIsRevealed] = useState(false);
+
+  const input = (
+    <Input
+      id={field.name}
+      name={field.name}
+      value={field.state.value}
+      onBlur={field.handleBlur}
+      onChange={(event) => field.handleChange(event.target.value)}
+      aria-invalid={isInvalid}
+      className={cn(CONTROL_SIZE, revealable && "pr-12")}
+      type={revealable && isRevealed ? "text" : type}
+      {...props}
+    />
+  );
 
   return (
     <Field data-invalid={isInvalid} className={fieldClassName}>
       <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
-      <Input
-        id={field.name}
-        name={field.name}
-        value={field.state.value}
-        onBlur={field.handleBlur}
-        onChange={(event) => field.handleChange(event.target.value)}
-        aria-invalid={isInvalid}
-        className={CONTROL_SIZE}
-        {...props}
-      />
+      {revealable ? (
+        <div className="relative">
+          {input}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsRevealed((revealed) => !revealed)}
+            aria-label={`${isRevealed ? "Hide" : "Show"} ${label.toLowerCase()}`}
+            aria-pressed={isRevealed}
+            aria-controls={field.name}
+            className="absolute inset-y-0 right-0 h-12 w-12 text-muted-foreground"
+          >
+            {isRevealed ? (
+              <EyeOff aria-hidden="true" className="size-5" />
+            ) : (
+              <Eye aria-hidden="true" className="size-5" />
+            )}
+          </Button>
+        </div>
+      ) : (
+        input
+      )}
       {description && <FieldDescription>{description}</FieldDescription>}
-      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+      {isInvalid && <FieldError errors={toFieldErrors(field.state.meta.errors)} />}
     </Field>
   );
 }
@@ -113,12 +162,49 @@ function FormSection({ id, title, description, children }: FormSectionProps) {
   );
 }
 
+// Temporary: shown after signup until sessions exist, then we redirect instead.
+function RegisterSuccess({ storeName, username }: RegisteredManager) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-xl">Your store is ready</CardTitle>
+        <CardDescription className="text-base">
+          {storeName} is set up, and you&apos;re its manager.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="text-base">
+        Your username is <span className="font-medium">{username}</span>.
+      </CardContent>
+      <CardFooter>
+        <Link
+          href="/"
+          className={buttonVariants({ className: "h-12 w-full text-base lg:w-auto lg:px-8" })}
+        >
+          Go to home
+        </Link>
+      </CardFooter>
+    </Card>
+  );
+}
+
 export function RegisterForm() {
+  const [registered, setRegistered] = useState<RegisteredManager | null>(null);
+
   const form = useForm({
     defaultValues,
-    validators: { onSubmit: registerSchema },
-    onSubmit: ({ value }) => handleRegister(value),
+    validators: {
+      onSubmit: registerSchema,
+      // Runs only after the Zod check above passes.
+      onSubmitAsync: async ({ value }) => {
+        const result = await registerAction(value);
+        if (!result.ok) return toFormErrors(result);
+        setRegistered(result.data);
+        return undefined;
+      },
+    },
   });
+
+  if (registered) return <RegisterSuccess {...registered} />;
 
   return (
     <form
@@ -190,7 +276,7 @@ export function RegisterForm() {
                   </SelectContent>
                 </Select>
                 {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
+                  <FieldError errors={toFieldErrors(field.state.meta.errors)} />
                 )}
               </Field>
             );
@@ -213,6 +299,7 @@ export function RegisterForm() {
             <TextField
               field={field}
               label="Username"
+              description="Saved in lowercase."
               autoComplete="username"
               autoCapitalize="none"
               autoCorrect="off"
@@ -224,22 +311,10 @@ export function RegisterForm() {
           {(field) => (
             <TextField
               field={field}
-              label="Email (optional)"
-              fieldClassName="lg:col-span-2"
+              label="Email"
               type="email"
               inputMode="email"
               autoComplete="email"
-            />
-          )}
-        </form.Field>
-        <form.Field name="password">
-          {(field) => (
-            <TextField
-              field={field}
-              label="Password"
-              type="password"
-              autoComplete="new-password"
-              description="At least 8 characters."
             />
           )}
         </form.Field>
@@ -249,6 +324,7 @@ export function RegisterForm() {
               field={field}
               label="PIN"
               type="password"
+              revealable
               inputMode="numeric"
               autoComplete="off"
               maxLength={PIN_LENGTH}
@@ -256,11 +332,63 @@ export function RegisterForm() {
             />
           )}
         </form.Field>
+        <form.Field name="password">
+          {(field) => (
+            <TextField
+              field={field}
+              label="Password"
+              type="password"
+              revealable
+              autoComplete="new-password"
+              description="At least 8 characters."
+            />
+          )}
+        </form.Field>
+        <form.Field
+          name="confirmPassword"
+          validators={{
+            // Check on blur, and again when Password is blurred, so a changed
+            // password is caught. Empty is left to the submit check.
+            onBlurListenTo: ["password"],
+            onBlur: ({ value, fieldApi }) =>
+              value && value !== fieldApi.form.getFieldValue("password")
+                ? "Passwords don't match"
+                : undefined,
+          }}
+        >
+          {(field) => (
+            <TextField
+              field={field}
+              label="Confirm password"
+              type="password"
+              revealable
+              autoComplete="new-password"
+            />
+          )}
+        </form.Field>
       </FormSection>
 
-      <Button type="submit" className="h-12 w-full text-base lg:w-auto lg:self-end lg:px-8">
-        Create account
-      </Button>
+      <form.Subscribe
+        selector={(state) => ({
+          formError: state.errorMap.onSubmit,
+          isSubmitting: state.isSubmitting,
+        })}
+      >
+        {({ formError, isSubmitting }) => (
+          <div className="flex flex-col gap-3 lg:items-end">
+            {typeof formError === "string" && (
+              <FieldError className="text-base">{formError}</FieldError>
+            )}
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="h-12 w-full text-base lg:w-auto lg:px-8"
+            >
+              {isSubmitting ? "Creating account…" : "Create account"}
+            </Button>
+          </div>
+        )}
+      </form.Subscribe>
     </form>
   );
 }

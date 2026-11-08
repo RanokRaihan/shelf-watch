@@ -19,19 +19,34 @@ export class AppError extends Error {
   }
 }
 
-// Fields of a violated unique constraint. Prisma puts them in `meta.target`;
-// with a driver adapter (`@prisma/adapter-pg`) they may be under
-// `meta.driverAdapterError.cause.constraint.fields` instead, so check both.
+// Prisma's default unique index name is `<Model>_<field>[_<field>…]_key`,
+// e.g. `User_username_key` -> ["username"]. Model and field names here
+// contain no underscores, so splitting on "_" is safe.
+function fieldsFromIndexName(index: string): string[] {
+  const parts = index.split("_");
+  if (parts.length < 3 || parts.at(-1) !== "key") return [];
+  return parts.slice(1, -1);
+}
+
+// Fields of a violated unique constraint. Without a driver adapter Prisma puts
+// them in `meta.target`. With `@prisma/adapter-pg`, Postgres reports the
+// constraint by name, so the adapter gives
+// `meta.driverAdapterError.cause.constraint.index` (e.g. "User_username_key")
+// and only falls back to `.fields` when there is no name. Check all three.
 function uniqueFields(meta: Record<string, unknown> | undefined): string[] {
   if (!meta) return [];
   if (Array.isArray(meta.target)) return meta.target.map(String);
 
-  const fields = (
+  const constraint = (
     meta.driverAdapterError as
-      | { cause?: { constraint?: { fields?: unknown } } }
+      | { cause?: { constraint?: { fields?: unknown; index?: unknown } } }
       | undefined
-  )?.cause?.constraint?.fields;
-  return Array.isArray(fields) ? fields.map(String) : [];
+  )?.cause?.constraint;
+  if (Array.isArray(constraint?.fields)) return constraint.fields.map(String);
+  if (typeof constraint?.index === "string") {
+    return fieldsFromIndexName(constraint.index);
+  }
+  return [];
 }
 
 /** Maps known Prisma errors to a failure, or returns null for anything else. */
