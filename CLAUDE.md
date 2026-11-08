@@ -14,7 +14,7 @@ Next.js (App Router, TypeScript, Tailwind), Prisma 7 (`pg` driver adapter), Post
 
 ## Scope
 
-Core loop only: scan, set pull date, today's list. No auth, notifications, or analytics until I say so. Never create or change the Prisma schema; Ranok owns it.
+Core loop (scan, set pull date, today's list) plus auth as described in `docs/auth-flow.md`. No notifications or analytics until I say so. Never create or change the Prisma schema; Ranok owns it.
 
 ## Housekeeping
 

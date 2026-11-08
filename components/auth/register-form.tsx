@@ -3,19 +3,13 @@
 import { useForm, type AnyFieldApi } from "@tanstack/react-form";
 import { cn } from "cn";
 import { Eye, EyeOff } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, type ComponentProps, type ReactNode } from "react";
+import { toast } from "sonner";
 
 import { registerAction } from "@/actions/register.action";
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Field,
   FieldDescription,
@@ -33,7 +27,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toFormErrors } from "@/lib/action-result";
-import type { RegisteredManager } from "@/lib/register";
 import {
   DEFAULT_TIMEZONE,
   PIN_LENGTH,
@@ -164,33 +157,8 @@ function FormSection({ id, title, description, children }: FormSectionProps) {
   );
 }
 
-// Temporary: shown after signup until sessions exist, then we redirect instead.
-function RegisterSuccess({ storeName, username }: RegisteredManager) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-xl">Your store is ready</CardTitle>
-        <CardDescription className="text-base">
-          {storeName} is set up, and you&apos;re its manager.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="text-base">
-        Your username is <span className="font-medium">{username}</span>.
-      </CardContent>
-      <CardFooter>
-        <Link
-          href="/"
-          className={buttonVariants({ className: "h-12 w-full text-base lg:w-auto lg:px-8" })}
-        >
-          Go to home
-        </Link>
-      </CardFooter>
-    </Card>
-  );
-}
-
 export function RegisterForm() {
-  const [registered, setRegistered] = useState<RegisteredManager | null>(null);
+  const router = useRouter();
 
   const form = useForm({
     defaultValues,
@@ -200,13 +168,16 @@ export function RegisterForm() {
       onSubmitAsync: async ({ value }) => {
         const result = await registerAction(value);
         if (!result.ok) return toFormErrors(result);
-        setRegistered(result.data);
+        toast.success(`Welcome, ${result.data.name}`, {
+          description: `${result.data.storeName} is ready.`,
+        });
+        // Client-side navigation keeps the toast, since the Toaster lives in
+        // the root layout.
+        router.replace("/manage");
         return undefined;
       },
     },
   });
-
-  if (registered) return <RegisterSuccess {...registered} />;
 
   return (
     <form
