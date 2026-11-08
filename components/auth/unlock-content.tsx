@@ -21,16 +21,34 @@ export async function UnlockContent() {
   const device = await getDevice();
 
   if (device.state === "trusted") {
+    const initials = device.user.name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("");
+
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Hi, {device.user.name}</CardTitle>
-          <CardDescription className="text-base">
-            Enter your PIN to open {device.store.name}.
-          </CardDescription>
+      <Card className="py-8">
+        <CardHeader className="flex flex-col items-center gap-3 text-center">
+          <div
+            aria-hidden="true"
+            className="flex size-16 items-center justify-center rounded-full bg-primary/10 text-xl font-semibold text-primary"
+          >
+            {initials}
+          </div>
+          <div className="flex flex-col gap-1">
+            <CardTitle className="text-2xl">Hi, {device.user.name}</CardTitle>
+            <CardDescription className="text-base">
+              Enter your PIN to open {device.store.name}
+            </CardDescription>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-6">
           <PinForm />
+          <p className="text-center text-sm text-muted-foreground">
+            Forgot your PIN? Ask your manager to reset it.
+          </p>
         </CardContent>
       </Card>
     );
@@ -75,9 +93,18 @@ export async function UnlockContent() {
 
 export function UnlockSkeleton() {
   return (
-    <div className="flex flex-col gap-2" aria-hidden="true">
-      <div className="h-9 w-48 animate-pulse rounded-md bg-muted" />
-      <div className="h-6 w-64 animate-pulse rounded-md bg-muted" />
+    <div
+      aria-hidden="true"
+      className="flex flex-col items-center gap-4 rounded-xl bg-card py-8"
+    >
+      <div className="size-16 animate-pulse rounded-full bg-muted" />
+      <div className="h-8 w-40 animate-pulse rounded-md bg-muted" />
+      <div className="h-5 w-56 animate-pulse rounded-md bg-muted" />
+      <div className="flex gap-3 pt-2">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="size-14 animate-pulse rounded-lg bg-muted" />
+        ))}
+      </div>
     </div>
   );
 }
