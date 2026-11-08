@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { initials } from "@/lib/initials";
 import { getDevice, getSession } from "@/lib/session";
 
 // PIN screen (docs/auth-flow.md 4.4), plus the pending and unknown-device
@@ -21,13 +22,6 @@ export async function UnlockContent() {
   const device = await getDevice();
 
   if (device.state === "trusted") {
-    const initials = device.user.name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join("");
-
     return (
       <Card className="py-8">
         <CardHeader className="flex flex-col items-center gap-3 text-center">
@@ -35,7 +29,7 @@ export async function UnlockContent() {
             aria-hidden="true"
             className="flex size-16 items-center justify-center rounded-full bg-primary/10 text-xl font-semibold text-primary"
           >
-            {initials}
+            {initials(device.user.name)}
           </div>
           <div className="flex flex-col gap-1">
             <CardTitle className="text-2xl">Hi, {device.user.name}</CardTitle>

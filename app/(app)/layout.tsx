@@ -1,7 +1,8 @@
 import { AppNav } from "@/components/layout/app-nav";
 
-// Shell only. Auth is checked in the page, not here.
-export default function TodayLayout({ children }: LayoutProps<"/today">) {
+// Shell for signed-in pages (`/today`, `/manage`, `/manage/login`). Auth is
+// checked in each page, not here.
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-1 flex-col bg-muted/40">
       <AppNav />

@@ -1,28 +1,10 @@
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { requireSession } from "@/lib/session";
+import { requireManager } from "@/lib/session";
 
-// Placeholder manager home content. Non-managers see "Managers only" until
-// `requireManager` exists. Reads the session, so render it inside Suspense.
+// Placeholder manager home content. `requireManager()` sends colleagues to
+// /today and managers without recent password access to /manage/login.
+// Reads the session, so render it inside Suspense.
 export async function ManageWelcome() {
-  const { user } = await requireSession();
-
-  if (user.role !== "MANAGER") {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Managers only</CardTitle>
-          <CardDescription className="text-base">
-            This page is for store managers.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
+  const { user } = await requireManager();
 
   return (
     <div className="flex flex-col gap-1">

@@ -134,6 +134,38 @@ export async function requireSession(): Promise<AuthContext> {
   return auth;
 }
 
+/** MANAGER role and a password confirmed in the last 15 minutes (4.5). */
+export function hasManagerAccess(auth: AuthContext): boolean {
+  return (
+    auth.user.role === "MANAGER" &&
+    !!auth.session.managerUntil &&
+    auth.session.managerUntil.getTime() > Date.now()
+  );
+}
+
+/**
+ * Guard for manager pages (docs/auth-flow.md 3, second helper). No session
+ * goes to `/unlock`, the wrong role to `/today`, and a manager whose access
+ * ran out to the password screen at `/manage/login`.
+ */
+export async function requireManager(): Promise<AuthContext> {
+  const auth = await requireSession();
+  if (auth.user.role !== "MANAGER") redirect("/today");
+  if (!hasManagerAccess(auth)) redirect("/manage/login");
+  return auth;
+}
+
+/**
+ * Guard for `/manage/login`: only a signed-in manager without current manager
+ * access sees it. A manager who already has access goes to `/manage`.
+ */
+export async function requireManagerLogin(): Promise<AuthContext> {
+  const auth = await requireSession();
+  if (auth.user.role !== "MANAGER") redirect("/today");
+  if (hasManagerAccess(auth)) redirect("/manage");
+  return auth;
+}
+
 const deviceInclude = {
   user: { select: { name: true, username: true, status: true } },
   store: { select: { name: true } },

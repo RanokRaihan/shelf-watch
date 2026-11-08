@@ -20,11 +20,14 @@ export const ACTIVE_TOUCH_MS = 1 * MINUTE;
 /** Manager access after a correct password. */
 export const MANAGER_TTL_MS = 15 * MINUTE;
 
-/** Wrong PINs in a row before the user is locked (docs/auth-flow.md 5). */
-export const PIN_MAX_ATTEMPTS = 5;
+/**
+ * Wrong PINs (or passwords) in a row before the user is locked
+ * (docs/auth-flow.md 5).
+ */
+export const MAX_FAILED_ATTEMPTS = 5;
 /**
  * Lock length for the 1st, 2nd and 3rd+ lock in a row: about 1, 5, then 15
- * minutes. The step comes from `failedPinAttempts / PIN_MAX_ATTEMPTS`, since
- * the count only resets on a correct PIN.
+ * minutes. The step comes from `failed attempts / MAX_FAILED_ATTEMPTS`, since
+ * the count only resets on a correct PIN or password.
  */
-export const PIN_LOCK_STEPS_MS = [1 * MINUTE, 5 * MINUTE, 15 * MINUTE] as const;
+export const LOCK_STEPS_MS = [1 * MINUTE, 5 * MINUTE, 15 * MINUTE] as const;
