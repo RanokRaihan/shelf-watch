@@ -28,25 +28,29 @@ model Store {
 }
 
 model User {
-  id                String        @id @default(cuid())
-  storeId           String
-  store             Store         @relation(fields: [storeId], references: [id])
-  name              String
-  username          String        @unique
-  role              Role          @default(ASSOCIATE)
-  status            UserStatus    @default(PENDING)
-  email             String?       @unique
-  passwordHash      String?
-  pinHash           String
-  failedPinAttempts Int           @default(0)
-  lockedAt          DateTime?
-  approvedAt        DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  invites           StoreInvite[]
-  devices           Device[]
-  createdPullItems  PullItem[]    @relation("PullItemCreatedBy")
-  pullEvents        PullEvent[]
+  id                     String        @id @default(cuid())
+  storeId                String
+  store                  Store         @relation(fields: [storeId], references: [id])
+  name                   String
+  username               String        @unique
+  role                   Role          @default(ASSOCIATE)
+  status                 UserStatus    @default(PENDING)
+  email                  String?       @unique
+  phone                  String        @unique
+  passwordHash           String?
+  pinHash                String
+  failedPinAttempts      Int           @default(0)
+  lockedUntil            DateTime?
+  failedPasswordAttempts Int           @default(0)
+  passwordLockedUntil    DateTime?
+  approvedAt             DateTime?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  invites                StoreInvite[]
+  devices                Device[]
+  createdPullItems       PullItem[]    @relation("PullItemCreatedBy")
+  pullEvents             PullEvent[]
+  sessions               Session[]
 }
 
 model StoreInvite {
@@ -65,13 +69,32 @@ model Device {
   id         String    @id @default(cuid())
   storeId    String
   store      Store     @relation(fields: [storeId], references: [id])
-  userId     String?
-  user       User?     @relation(fields: [userId], references: [id])
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
   tokenHash  String    @unique
   label      String?
   lastSeenAt DateTime?
   revokedAt  DateTime?
+  approvedAt DateTime?
   createdAt  DateTime  @default(now())
+  sessions   Session[]
+
+  @@index([userId])
+}
+
+model Session {
+  id           String    @id // sha256 of the cookie token
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId     String
+  device       Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  managerUntil DateTime?
+  lastActiveAt DateTime  @default(now())
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+  @@index([deviceId])
 }
 
 model Product {
@@ -128,6 +151,8 @@ model PullEvent {
   user       User       @relation(fields: [userId], references: [id])
   action     PullAction
   createdAt  DateTime   @default(now())
+
+  @@index([pullItemId])
 }
 
 enum Role {

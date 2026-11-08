@@ -30,6 +30,8 @@ export async function registerManager(
           // Stored lowercase so the unique index is case-insensitive.
           username: values.username.trim().toLowerCase(),
           email: values.email.trim().toLowerCase(),
+          // Already E.164 from `phoneSchema`.
+          phone: values.phone,
           passwordHash,
           pinHash,
           role: "MANAGER",

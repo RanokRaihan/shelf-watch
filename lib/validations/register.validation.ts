@@ -27,6 +27,24 @@ export const usernameSchema = z
   // `abort: true` instead; it stops the confirm-password check in registerSchema.
   .regex(/^[a-z0-9_.]*$/, "Use only letters, numbers, dots, and underscores");
 
+// US numbers only for now (matching the US-only timezone list). Accepts
+// common formats like "(215) 555-1234", "215.555.1234" or "+1 215 555 1234"
+// and outputs E.164 ("+12155551234"), the format stored in `User.phone`.
+// Reuse this wherever a phone number is entered so lookups match.
+const US_E164 = /^\+1[2-9]\d{2}[2-9]\d{6}$/;
+
+export const phoneSchema = z
+  .string()
+  .trim()
+  .min(1, "Enter your phone number")
+  .transform((value) => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length === 10) return `+1${digits}`;
+    if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+    return value;
+  })
+  .pipe(z.string().regex(US_E164, "Enter a valid US phone number"));
+
 const registerFields = z.object({
   // Store
   storeName: z
@@ -58,6 +76,7 @@ const registerFields = z.object({
     .toLowerCase()
     .min(1, "Enter your email")
     .pipe(z.email("Enter a valid email address")),
+  phone: phoneSchema,
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")
@@ -66,20 +85,28 @@ const registerFields = z.object({
   pin: z
     .string()
     .regex(new RegExp(`^\\d{${PIN_LENGTH}}$`), `PIN must be ${PIN_LENGTH} digits`),
+  confirmPin: z.string().min(1, "Confirm your PIN"),
 });
 
 // Also checked on the server, since the action validates with this schema.
-export const registerSchema = registerFields.refine(
-  (values) => values.password === values.confirmPassword,
-  {
+// Each `when` lets its check run even when other fields fail, so the mismatch
+// shows in the same submit.
+export const registerSchema = registerFields
+  .refine((values) => values.password === values.confirmPassword, {
     error: "Passwords don't match",
     path: ["confirmPassword"],
-    // Run even when other fields fail, so the mismatch shows in the same submit.
     when: (payload) =>
       registerFields
         .pick({ password: true, confirmPassword: true })
         .safeParse(payload.value).success,
-  },
-);
+  })
+  .refine((values) => values.pin === values.confirmPin, {
+    error: "PINs don't match",
+    path: ["confirmPin"],
+    when: (payload) =>
+      registerFields
+        .pick({ pin: true, confirmPin: true })
+        .safeParse(payload.value).success,
+  });
 
 export type RegisterValues = z.infer<typeof registerSchema>;

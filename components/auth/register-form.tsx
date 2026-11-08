@@ -49,9 +49,11 @@ const defaultValues: RegisterValues = {
   name: "",
   username: "",
   email: "",
+  phone: "",
   password: "",
   confirmPassword: "",
   pin: "",
+  confirmPin: "",
 };
 
 const CONTROL_SIZE = "h-12 px-3 text-base md:text-base";
@@ -318,17 +320,15 @@ export function RegisterForm() {
             />
           )}
         </form.Field>
-        <form.Field name="pin">
+        <form.Field name="phone">
           {(field) => (
             <TextField
               field={field}
-              label="PIN"
-              type="password"
-              revealable
-              inputMode="numeric"
-              autoComplete="off"
-              maxLength={PIN_LENGTH}
-              description={`${PIN_LENGTH} digits, for quick sign-in.`}
+              label="Phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="(215) 555-1234"
             />
           )}
         </form.Field>
@@ -363,6 +363,44 @@ export function RegisterForm() {
               type="password"
               revealable
               autoComplete="new-password"
+            />
+          )}
+        </form.Field>
+        <form.Field name="pin">
+          {(field) => (
+            <TextField
+              field={field}
+              label="PIN"
+              type="password"
+              revealable
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={PIN_LENGTH}
+              description={`${PIN_LENGTH} digits, for quick sign-in.`}
+            />
+          )}
+        </form.Field>
+        <form.Field
+          name="confirmPin"
+          validators={{
+            // Same as Confirm password: check on blur, and again when PIN is
+            // blurred. Empty is left to the submit check.
+            onBlurListenTo: ["pin"],
+            onBlur: ({ value, fieldApi }) =>
+              value && value !== fieldApi.form.getFieldValue("pin")
+                ? "PINs don't match"
+                : undefined,
+          }}
+        >
+          {(field) => (
+            <TextField
+              field={field}
+              label="Confirm PIN"
+              type="password"
+              revealable
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={PIN_LENGTH}
             />
           )}
         </form.Field>

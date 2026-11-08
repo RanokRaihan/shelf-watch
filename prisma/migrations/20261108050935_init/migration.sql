@@ -31,10 +31,13 @@ CREATE TABLE "User" (
     "role" "Role" NOT NULL DEFAULT 'ASSOCIATE',
     "status" "UserStatus" NOT NULL DEFAULT 'PENDING',
     "email" TEXT,
+    "phone" TEXT NOT NULL,
     "passwordHash" TEXT,
     "pinHash" TEXT NOT NULL,
     "failedPinAttempts" INTEGER NOT NULL DEFAULT 0,
-    "lockedAt" TIMESTAMP(3),
+    "lockedUntil" TIMESTAMP(3),
+    "failedPasswordAttempts" INTEGER NOT NULL DEFAULT 0,
+    "passwordLockedUntil" TIMESTAMP(3),
     "approvedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -59,14 +62,28 @@ CREATE TABLE "StoreInvite" (
 CREATE TABLE "Device" (
     "id" TEXT NOT NULL,
     "storeId" TEXT NOT NULL,
-    "userId" TEXT,
+    "userId" TEXT NOT NULL,
     "tokenHash" TEXT NOT NULL,
     "label" TEXT,
     "lastSeenAt" TIMESTAMP(3),
     "revokedAt" TIMESTAMP(3),
+    "approvedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Device_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Session" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "deviceId" TEXT NOT NULL,
+    "managerUntil" TIMESTAMP(3),
+    "lastActiveAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -130,16 +147,31 @@ CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "User_phone_key" ON "User"("phone");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "StoreInvite_tokenHash_key" ON "StoreInvite"("tokenHash");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Device_tokenHash_key" ON "Device"("tokenHash");
 
 -- CreateIndex
+CREATE INDEX "Device_userId_idx" ON "Device"("userId");
+
+-- CreateIndex
+CREATE INDEX "Session_userId_idx" ON "Session"("userId");
+
+-- CreateIndex
+CREATE INDEX "Session_deviceId_idx" ON "Session"("deviceId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "StoreProduct_storeId_upc_key" ON "StoreProduct"("storeId", "upc");
 
 -- CreateIndex
 CREATE INDEX "PullItem_storeId_status_pullDate_idx" ON "PullItem"("storeId", "status", "pullDate");
+
+-- CreateIndex
+CREATE INDEX "PullEvent_pullItemId_idx" ON "PullEvent"("pullItemId");
 
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -154,7 +186,13 @@ ALTER TABLE "StoreInvite" ADD CONSTRAINT "StoreInvite_createdById_fkey" FOREIGN 
 ALTER TABLE "Device" ADD CONSTRAINT "Device_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Device" ADD CONSTRAINT "Device_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Device" ADD CONSTRAINT "Device_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Session" ADD CONSTRAINT "Session_deviceId_fkey" FOREIGN KEY ("deviceId") REFERENCES "Device"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "StoreProduct" ADD CONSTRAINT "StoreProduct_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
