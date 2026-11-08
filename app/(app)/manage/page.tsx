@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { ModeToggle } from "@/components/mode-toggle";
 import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { requireSession } from "@/lib/session";
+  ManageWelcome,
+  ManageWelcomeSkeleton,
+} from "@/components/manage/manage-welcome";
+import { ModeToggle } from "@/components/mode-toggle";
 
 export const metadata: Metadata = {
   title: "Manage | ShelfWatch",
@@ -27,47 +24,10 @@ export default function ManagePage() {
         </header>
 
         {/* Reading the session cookie must sit behind Suspense (cacheComponents). */}
-        <Suspense fallback={<WelcomeSkeleton />}>
-          <Welcome />
+        <Suspense fallback={<ManageWelcomeSkeleton />}>
+          <ManageWelcome />
         </Suspense>
       </div>
     </main>
-  );
-}
-
-async function Welcome() {
-  const { user } = await requireSession();
-
-  if (user.role !== "MANAGER") {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Managers only</CardTitle>
-          <CardDescription className="text-base">
-            This page is for store managers.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-1">
-      <h1 className="text-3xl font-bold tracking-tight">
-        Welcome, {user.name}
-      </h1>
-      <p className="text-base text-muted-foreground">
-        You&apos;re the manager of {user.store.name}.
-      </p>
-    </div>
-  );
-}
-
-function WelcomeSkeleton() {
-  return (
-    <div className="flex flex-col gap-2" aria-hidden="true">
-      <div className="h-9 w-64 animate-pulse rounded-md bg-muted" />
-      <div className="h-6 w-48 animate-pulse rounded-md bg-muted" />
-    </div>
   );
 }

@@ -42,6 +42,22 @@ export async function setAuthCookies(tokens: {
   });
 }
 
+/**
+ * Logout (docs/auth-flow.md 2: "the user locks or logs out"). Deletes this
+ * phone's Session row and the `sw_session` cookie. The device stays trusted,
+ * so next time the user only needs their PIN. Safe to call with no session.
+ * Server actions / route handlers only, since it deletes a cookie.
+ */
+export async function endSession(): Promise<void> {
+  const jar = await cookies();
+  const token = jar.get(SESSION_COOKIE)?.value;
+  if (token) {
+    // deleteMany so an already-ended session doesn't throw.
+    await db.session.deleteMany({ where: { id: hashToken(token) } });
+  }
+  jar.delete(SESSION_COOKIE);
+}
+
 const sessionInclude = {
   user: {
     select: {

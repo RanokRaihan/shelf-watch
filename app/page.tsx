@@ -1,9 +1,9 @@
 import { Check, KeyRound, ScanBarcode, Smartphone, Users } from "lucide-react";
 import { Bricolage_Grotesque } from "next/font/google";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
+import { EntryRedirect } from "@/components/auth/entry-redirect";
 import { ModeToggle } from "@/components/mode-toggle";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -13,7 +13,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { getEntryRoute } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 const display = Bricolage_Grotesque({
@@ -178,15 +177,6 @@ const TILES = [
   },
 ];
 
-// Sends signed-in or trusted phones into the app; everyone else stays on the
-// landing page. Reads cookies, so it sits behind Suspense (cacheComponents)
-// and the landing markup stays in the static shell.
-async function EntryRedirect() {
-  const route = await getEntryRoute();
-  if (route) redirect(route);
-  return null;
-}
-
 export default function Home() {
   return (
     <div
@@ -195,6 +185,7 @@ export default function Home() {
         "flex flex-1 flex-col overflow-x-clip bg-background text-foreground",
       )}
     >
+      {/* Reads cookies, so it sits behind Suspense; the landing stays static. */}
       <Suspense fallback={null}>
         <EntryRedirect />
       </Suspense>
