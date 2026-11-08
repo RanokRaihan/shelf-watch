@@ -116,3 +116,58 @@ export async function requireSession(): Promise<AuthContext> {
   if (!auth) redirect("/unlock");
   return auth;
 }
+
+const deviceInclude = {
+  user: { select: { name: true, username: true, status: true } },
+  store: { select: { name: true } },
+} as const;
+
+type DeviceOwner = {
+  user: { name: string; username: string };
+  store: { name: string };
+};
+
+export type DeviceState =
+  | { state: "none" }
+  | { state: "revoked" }
+  | ({ state: "pending" } & DeviceOwner)
+  | ({ state: "trusted" } & DeviceOwner);
+
+/**
+ * What the `sw_device` cookie says about this phone. Read only: doesn't set
+ * cookies or touch `lastSeenAt`, so it works in Server Components.
+ * - `none`: no cookie, or no matching device
+ * - `revoked`: device revoked, or its user is disabled
+ * - `pending`: device or user still waiting for manager approval
+ * - `trusted`: approved device of an ACTIVE user, ready for the PIN screen
+ */
+export async function getDevice(): Promise<DeviceState> {
+  const token = (await cookies()).get(DEVICE_COOKIE)?.value;
+  if (!token) return { state: "none" };
+
+  const device = await db.device.findUnique({
+    where: { tokenHash: hashToken(token) },
+    include: deviceInclude,
+  });
+  if (!device) return { state: "none" };
+
+  const { user, store } = device;
+  if (device.revokedAt || user.status === "DISABLED") return { state: "revoked" };
+
+  const owner = { user: { name: user.name, username: user.username }, store };
+  if (!device.approvedAt || user.status === "PENDING") {
+    return { state: "pending", ...owner };
+  }
+  return { state: "trusted", ...owner };
+}
+
+/**
+ * Where `/` should send this visitor: `/today` with a valid session,
+ * `/unlock` for a trusted or pending device, or null to show the landing page.
+ */
+export async function getEntryRoute(): Promise<"/today" | "/unlock" | null> {
+  if (await getSession()) return "/today";
+  const device = await getDevice();
+  if (device.state === "pending" || device.state === "trusted") return "/unlock";
+  return null;
+}
