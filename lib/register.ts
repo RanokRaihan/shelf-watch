@@ -3,7 +3,7 @@ import "server-only";
 import { MANAGER_TTL_MS, SESSION_TTL_MS } from "@/lib/auth-config";
 import { db } from "@/lib/db";
 import { hashSecret } from "@/lib/passwords";
-import { setAuthCookies } from "@/lib/session";
+import { assertGuest, setAuthCookies } from "@/lib/session";
 import { hashToken, newToken } from "@/lib/tokens";
 import type { RegisterValues } from "@/lib/validations/register.validation";
 
@@ -17,11 +17,16 @@ export type RegisteredManager = { name: string; storeName: string };
  *
  * A taken username, email or phone surfaces as Prisma P2002, which
  * `createAction` maps to a CONFLICT with field errors. Nothing is saved and no
- * cookie is set in that case.
+ * cookie is set in that case. Refused with FORBIDDEN when this phone is
+ * already signed in or has a trusted or pending device.
  */
 export async function registerManager(
   values: RegisterValues,
 ): Promise<RegisteredManager> {
+  // A phone that is signed in or already trusted can't start another store:
+  // that would add a second Device and overwrite its `sw_device` cookie.
+  await assertGuest();
+
   const [passwordHash, pinHash] = await Promise.all([
     hashSecret(values.password),
     hashSecret(values.pin),

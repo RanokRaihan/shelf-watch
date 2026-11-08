@@ -12,6 +12,7 @@ import {
   SESSION_TTL_MS,
 } from "@/lib/auth-config";
 import { db } from "@/lib/db";
+import { AppError } from "@/lib/errors";
 import { hashToken } from "@/lib/tokens";
 
 const baseCookie = {
@@ -170,4 +171,32 @@ export async function getEntryRoute(): Promise<"/today" | "/unlock" | null> {
   const device = await getDevice();
   if (device.state === "pending" || device.state === "trusted") return "/unlock";
   return null;
+}
+
+/**
+ * Guard for guest-only pages (`/register`, later `/signin` and `/join`).
+ * Sends a signed-in phone to `/today` and a trusted or pending device to
+ * `/unlock`. Call it in the page's Suspense child, before rendering content.
+ */
+export async function requireGuest(): Promise<void> {
+  const route = await getEntryRoute();
+  if (route) redirect(route);
+}
+
+/**
+ * Same rule as `requireGuest`, for mutations: throws a FORBIDDEN `AppError`
+ * instead of redirecting, so the form shows the message. Server actions can be
+ * called without the page, so guest-only mutations must call this themselves.
+ */
+export async function assertGuest(): Promise<void> {
+  const route = await getEntryRoute();
+  if (route === "/today") {
+    throw new AppError("FORBIDDEN", "You're already signed in.");
+  }
+  if (route === "/unlock") {
+    throw new AppError(
+      "FORBIDDEN",
+      "This phone is already set up for a store. Unlock it with your PIN.",
+    );
+  }
 }
