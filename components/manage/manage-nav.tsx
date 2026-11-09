@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 // the right. No auth check here; each page calls `requireManager()`.
 export function ManageNav() {
   return (
-    <div className="border-b">
+    <div className="border-b print:hidden">
       <nav aria-label="Manager" className={cn(APP_CONTAINER, "flex items-center gap-4")}>
         {/* usePathname suspends under a dynamic segment (cacheComponents). */}
         <Suspense fallback={<ManageTabLinks pathname={null} />}>

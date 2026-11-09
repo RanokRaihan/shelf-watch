@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 // reads the session, inside Suspense. Each page still checks the session itself.
 export function AppNav() {
   return (
-    <header className="border-b bg-background">
+    <header className="border-b bg-background print:hidden">
       <nav
         aria-label="Main"
         className={cn(APP_CONTAINER, "flex items-center justify-between")}

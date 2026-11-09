@@ -24,6 +24,18 @@ const baseCookie = {
 } as const;
 
 /**
+ * Sets only `sw_device`, for a device that has no session yet (a colleague
+ * who just joined and waits for approval, docs/auth-flow.md 4.3). Server
+ * actions / route handlers only.
+ */
+export async function setDeviceCookie(deviceToken: string): Promise<void> {
+  (await cookies()).set(DEVICE_COOKIE, deviceToken, {
+    ...baseCookie,
+    maxAge: DEVICE_TTL_MS / 1000,
+  });
+}
+
+/**
  * Sets `sw_device` and `sw_session`. Only works in a server action or route
  * handler; Server Components can't set cookies.
  */
@@ -31,11 +43,8 @@ export async function setAuthCookies(tokens: {
   deviceToken: string;
   sessionToken: string;
 }): Promise<void> {
+  await setDeviceCookie(tokens.deviceToken);
   const jar = await cookies();
-  jar.set(DEVICE_COOKIE, tokens.deviceToken, {
-    ...baseCookie,
-    maxAge: DEVICE_TTL_MS / 1000,
-  });
   jar.set(SESSION_COOKIE, tokens.sessionToken, {
     ...baseCookie,
     maxAge: SESSION_TTL_MS / 1000,
@@ -210,21 +219,25 @@ export async function getDevice(): Promise<DeviceState> {
   return { state: "trusted", ...owner };
 }
 
+export type EntryRoute = "/today" | "/unlock" | "/pending";
+
 /**
  * Where `/` should send this visitor: `/today` with a valid session,
- * `/unlock` for a trusted or pending device, or null to show the landing page.
+ * `/unlock` for a trusted device, `/pending` for a device waiting for
+ * approval, or null to show the landing page.
  */
-export async function getEntryRoute(): Promise<"/today" | "/unlock" | null> {
+export async function getEntryRoute(): Promise<EntryRoute | null> {
   if (await getSession()) return "/today";
   const device = await getDevice();
-  if (device.state === "pending" || device.state === "trusted") return "/unlock";
+  if (device.state === "trusted") return "/unlock";
+  if (device.state === "pending") return "/pending";
   return null;
 }
 
 /**
- * Guard for guest-only pages (`/register`, later `/signin` and `/join`).
- * Sends a signed-in phone to `/today` and a trusted or pending device to
- * `/unlock`. Call it in the page's Suspense child, before rendering content.
+ * Guard for guest-only pages (`/register`, `/join/[token]`, later `/signin`).
+ * Sends a signed-in phone to `/today`, a trusted device to `/unlock` and a
+ * pending one to `/pending`. Call it in the page's Suspense child, before rendering content.
  */
 export async function requireGuest(): Promise<void> {
   const route = await getEntryRoute();
@@ -245,6 +258,12 @@ export async function assertGuest(): Promise<void> {
     throw new AppError(
       "FORBIDDEN",
       "This phone is already set up for a store. Unlock it with your PIN.",
+    );
+  }
+  if (route === "/pending") {
+    throw new AppError(
+      "FORBIDDEN",
+      "This phone is already waiting for manager approval.",
     );
   }
 }

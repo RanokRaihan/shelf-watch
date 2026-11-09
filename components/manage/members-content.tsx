@@ -1,7 +1,9 @@
 import { Plus } from "lucide-react";
+import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { requireManager } from "@/lib/session";
+import { cn } from "@/lib/utils";
 
 // Placeholder members page. Reads the session, so render it inside Suspense.
 export async function MembersContent() {
@@ -11,11 +13,13 @@ export async function MembersContent() {
     <>
       <div className="flex items-start justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Members</h1>
-        {/* Does nothing yet; invites come next. */}
-        <Button type="button" className="h-12 text-base">
+        <Link
+          href="/manage/members/invite"
+          className={cn(buttonVariants(), "h-12 gap-2 text-base")}
+        >
           <Plus aria-hidden="true" className="size-5" />
           Invite
-        </Button>
+        </Link>
       </div>
       <p className="text-base text-muted-foreground">
         Your team and pending invites will show up here.

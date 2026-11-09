@@ -96,11 +96,11 @@ A home screen app coming back from the background often shows the old page witho
 4. They set a PIN for everyday work.
 5. Their phone becomes a trusted, approved device (`sw_device` is set) and a session starts.
 
-### 4.2 Manager creates the join link / QR
-1. Opens Settings. The app asks for the password, which gives manager access.
-2. Taps "Create join link". A `StoreInvite` row is created (token hash, expiry) and a QR code is shown.
-3. The manager can print it or show it on screen.
-4. "Rotate link" revokes the old invite and creates a new one. Old QR codes stop working.
+### 4.2 Manager shows the join link / QR
+1. Opens Members and taps "Invite" (`/manage/members/invite`). The app asks for the password if needed, which gives manager access.
+2. Each store has one active join link. If there is none, opening the page creates it: a `StoreInvite` row with a random token and no expiry. The page shows the QR code for `/join/[token]`, the link with a Copy button, and the store name.
+3. The manager can print it (only the QR, store name and how to join) or show it on screen.
+4. "Rotate link" asks for confirmation, then revokes the old invite and creates a new one. Old QR codes stop working, printed copies included. Store links never expire on their own; rotating is how one is turned off.
 
 ### 4.3 Colleague joins
 1. Scans the store QR. It opens the join page in the browser.
@@ -170,7 +170,8 @@ Standard email reset link. This needs an email sending service set up before lau
 
 ### Storing secrets
 - PINs and passwords are stored only as hashes (bcrypt or argon2).
-- Session tokens, device tokens and invite tokens are stored only as hashes (sha256 is fine since they are long random values).
+- Session tokens and device tokens are stored only as hashes (sha256 is fine since they are long random values).
+- The one exception is store join link tokens (`StoreInvite.token`), stored as plain text so the invite page can show the same QR again. They are public by design (printed on the wall), and joining still needs manager approval. They are still long random values (32 bytes, base64url). Everything else stays hashed.
 
 ---
 

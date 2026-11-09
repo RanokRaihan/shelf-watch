@@ -59,8 +59,10 @@ model StoreInvite {
   store       Store     @relation(fields: [storeId], references: [id])
   createdById String
   createdBy   User      @relation(fields: [createdById], references: [id])
-  tokenHash   String    @unique
-  expiresAt   DateTime
+  // Plain token, not a hash: join links are public by design (docs/auth-flow.md 5).
+  token       String    @unique
+  // Null = never expires. Store join links have no expiry; Rotate revokes them.
+  expiresAt   DateTime?
   revokedAt   DateTime?
   createdAt   DateTime  @default(now())
 }

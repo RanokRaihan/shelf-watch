@@ -1,13 +1,16 @@
 "use client";
 
-import { useForm, type AnyFieldApi } from "@tanstack/react-form";
-import { cn } from "cn";
-import { Eye, EyeOff } from "lucide-react";
+import { useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
-import { useState, type ComponentProps, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { toast } from "sonner";
 
 import { registerAction } from "@/actions/register.action";
+import {
+  TextField,
+  isFieldInvalid,
+  toFieldErrors,
+} from "@/components/auth/text-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -18,7 +21,6 @@ import {
   FieldLabel,
   FieldSet,
 } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -48,86 +50,6 @@ const defaultValues: RegisterValues = {
   pin: "",
   confirmPin: "",
 };
-
-const CONTROL_SIZE = "h-12 px-3 text-base md:text-base";
-
-function isFieldInvalid(field: AnyFieldApi) {
-  return field.state.meta.isTouched && !field.state.meta.isValid;
-}
-
-// Zod errors arrive as `{ message }`, server errors as plain strings.
-function toFieldErrors(errors: unknown[]) {
-  return errors.map((error) =>
-    typeof error === "string" ? { message: error } : (error as { message?: string }),
-  );
-}
-
-type TextFieldProps = ComponentProps<"input"> & {
-  field: AnyFieldApi;
-  label: string;
-  description?: string;
-  fieldClassName?: string;
-  /** Adds an eye button that shows or hides the value (for `type="password"`). */
-  revealable?: boolean;
-};
-
-function TextField({
-  field,
-  label,
-  description,
-  fieldClassName,
-  revealable = false,
-  type,
-  ...props
-}: TextFieldProps) {
-  const isInvalid = isFieldInvalid(field);
-  const [isRevealed, setIsRevealed] = useState(false);
-
-  const input = (
-    <Input
-      id={field.name}
-      name={field.name}
-      value={field.state.value}
-      onBlur={field.handleBlur}
-      onChange={(event) => field.handleChange(event.target.value)}
-      aria-invalid={isInvalid}
-      className={cn(CONTROL_SIZE, revealable && "pr-12")}
-      type={revealable && isRevealed ? "text" : type}
-      {...props}
-    />
-  );
-
-  return (
-    <Field data-invalid={isInvalid} className={fieldClassName}>
-      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
-      {revealable ? (
-        <div className="relative">
-          {input}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsRevealed((revealed) => !revealed)}
-            aria-label={`${isRevealed ? "Hide" : "Show"} ${label.toLowerCase()}`}
-            aria-pressed={isRevealed}
-            aria-controls={field.name}
-            className="absolute inset-y-0 right-0 h-12 w-12 text-muted-foreground"
-          >
-            {isRevealed ? (
-              <EyeOff aria-hidden="true" className="size-5" />
-            ) : (
-              <Eye aria-hidden="true" className="size-5" />
-            )}
-          </Button>
-        </div>
-      ) : (
-        input
-      )}
-      {description && <FieldDescription>{description}</FieldDescription>}
-      {isInvalid && <FieldError errors={toFieldErrors(field.state.meta.errors)} />}
-    </Field>
-  );
-}
 
 type FormSectionProps = {
   id: string;
@@ -181,6 +103,8 @@ export function RegisterForm() {
 
   return (
     <form
+      // POST, so a submit before hydration never puts secrets in the URL.
+      method="post"
       noValidate
       className="flex flex-col gap-6"
       onSubmit={(event) => {
