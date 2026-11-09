@@ -73,3 +73,17 @@ export async function confirmManagerPassword({
     }),
   ]);
 }
+
+/**
+ * Ends manager access on this session (the Lock button): clears
+ * `managerUntil`, so manager pages need the password again. The session and
+ * device stay, and no cookies change. Does nothing without a session.
+ */
+export async function lockManagerAccess(): Promise<void> {
+  const auth = await getSession();
+  if (!auth) return;
+  await db.session.update({
+    where: { id: auth.session.id },
+    data: { managerUntil: null },
+  });
+}
