@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { getEntryRoute } from "@/lib/session";
+import { getEntryRoute } from "@/lib/auth/session";
 
 // Sends signed-in or trusted phones from `/` into the app; everyone else stays
 // on the landing page. Renders nothing. Reads cookies, so put it inside

@@ -10,10 +10,10 @@ import {
   IDLE_TIMEOUT_MS,
   SESSION_COOKIE,
   SESSION_TTL_MS,
-} from "@/lib/auth-config";
+} from "@/lib/auth/auth-config";
 import { db } from "@/lib/db";
-import { AppError } from "@/lib/errors";
-import { hashToken } from "@/lib/tokens";
+import { AppError } from "@/lib/core/errors";
+import { hashToken } from "@/lib/auth/tokens";
 
 const baseCookie = {
   httpOnly: true,

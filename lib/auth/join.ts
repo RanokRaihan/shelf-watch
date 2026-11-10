@@ -4,10 +4,10 @@ import { connection } from "next/server";
 
 import type { Prisma } from "@/app/generated/prisma/client";
 import { db } from "@/lib/db";
-import { AppError } from "@/lib/errors";
-import { hashSecret } from "@/lib/passwords";
-import { assertGuest, setDeviceCookie } from "@/lib/session";
-import { hashToken, newToken } from "@/lib/tokens";
+import { AppError } from "@/lib/core/errors";
+import { hashSecret } from "@/lib/auth/passwords";
+import { assertGuest, setDeviceCookie } from "@/lib/auth/session";
+import { hashToken, newToken } from "@/lib/auth/tokens";
 import { joinTokenSchema, type JoinValues } from "@/lib/validations/join.validation";
 
 /**

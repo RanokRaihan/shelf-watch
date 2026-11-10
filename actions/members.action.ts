@@ -1,9 +1,9 @@
 "use server";
 
-import { ok } from "@/lib/action-result";
-import { approveMember, rejectMember, removeMember } from "@/lib/members";
-import { createAction } from "@/lib/safe-action";
-import { requireManager } from "@/lib/session";
+import { ok } from "@/lib/core/action-result";
+import { approveMember, rejectMember, removeMember } from "@/lib/store/members";
+import { createAction } from "@/lib/core/safe-action";
+import { requireManager } from "@/lib/auth/session";
 import { memberActionSchema } from "@/lib/validations/members.validation";
 
 // Manager-only member actions. `requireManager()` runs first (no session goes

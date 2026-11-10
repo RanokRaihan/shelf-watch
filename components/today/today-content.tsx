@@ -4,7 +4,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { requireSession } from "@/lib/session";
+import { requireSession } from "@/lib/auth/session";
 
 // Placeholder for today's pull list. The list comes with the core loop.
 // Reads the session, so render it inside Suspense (cacheComponents).

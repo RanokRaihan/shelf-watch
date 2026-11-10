@@ -13,10 +13,10 @@ import {
   listActiveSessions,
   memberActionKind,
   type MemberDetail as Member,
-} from "@/lib/members";
-import { formatPhone } from "@/lib/phone";
-import { timeAgo } from "@/lib/relative-time";
-import { requireManager } from "@/lib/session";
+} from "@/lib/store/members";
+import { formatPhone } from "@/lib/format/phone";
+import { timeAgo } from "@/lib/format/relative-time";
+import { requireManager } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
 
 type Device = Member["devices"][number];

@@ -9,8 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { initials } from "@/lib/initials";
-import { getDevice, getSession } from "@/lib/session";
+import { initials } from "@/lib/format/initials";
+import { getDevice, getSession } from "@/lib/auth/session";
 
 // PIN screen (docs/auth-flow.md 4.4), plus the unknown-device state. Pending
 // devices go to /pending. Never links or redirects to `/`: `/` sends trusted

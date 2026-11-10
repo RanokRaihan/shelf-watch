@@ -1,4 +1,4 @@
-import { requireManager } from "@/lib/session";
+import { requireManager } from "@/lib/auth/session";
 
 // Placeholder manager home content. `requireManager()` sends colleagues to
 // /today and managers without recent password access to /manage/login.

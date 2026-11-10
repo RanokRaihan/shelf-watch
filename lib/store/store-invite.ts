@@ -1,9 +1,9 @@
 import "server-only";
 
 import type { Prisma } from "@/app/generated/prisma/client";
-import { appOrigin } from "@/lib/app-url";
+import { appOrigin } from "@/lib/core/app-url";
 import { db } from "@/lib/db";
-import { newToken } from "@/lib/tokens";
+import { newToken } from "@/lib/auth/tokens";
 
 /**
  * Store join links (docs/auth-flow.md 4.2). Each store has one active

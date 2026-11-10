@@ -2,8 +2,8 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 import type { Role, UserStatus } from "@/app/generated/prisma/client";
-import { initials } from "@/lib/initials";
-import type { MemberSummary } from "@/lib/members";
+import { initials } from "@/lib/format/initials";
+import type { MemberSummary } from "@/lib/store/members";
 import { cn } from "@/lib/utils";
 
 const roleLabels: Record<Role, string> = {

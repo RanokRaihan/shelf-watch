@@ -1,10 +1,10 @@
 import "server-only";
 
-import { MANAGER_TTL_MS, MAX_FAILED_ATTEMPTS } from "@/lib/auth-config";
+import { MANAGER_TTL_MS, MAX_FAILED_ATTEMPTS } from "@/lib/auth/auth-config";
 import { db } from "@/lib/db";
-import { AppError } from "@/lib/errors";
-import { verifySecret } from "@/lib/passwords";
-import { endSession, getSession, hasManagerAccess } from "@/lib/session";
+import { AppError } from "@/lib/core/errors";
+import { verifySecret } from "@/lib/auth/passwords";
+import { endSession, getSession, hasManagerAccess } from "@/lib/auth/session";
 import type { ManagerLoginValues } from "@/lib/validations/manager-login.validation";
 
 // Manager access (docs/auth-flow.md 4.5 and 5): wrong passwords count on this session, and the 5th ends it.

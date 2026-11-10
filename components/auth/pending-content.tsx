@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getDevice, getSession } from "@/lib/session";
+import { getDevice, getSession } from "@/lib/auth/session";
 
 // `/pending`: a joined colleague waiting for approval (docs/auth-flow.md 4.3
 // step 5). Only pending devices stay; everyone else goes to /today or

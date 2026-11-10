@@ -4,9 +4,9 @@ import Link from "next/link";
 import { InviteActions } from "@/components/manage/invite-actions";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { qrSvg } from "@/lib/qr";
-import { requireManager } from "@/lib/session";
-import { getOrCreateJoinLink } from "@/lib/store-invite";
+import { qrSvg } from "@/lib/store/qr";
+import { requireManager } from "@/lib/auth/session";
+import { getOrCreateJoinLink } from "@/lib/store/store-invite";
 import { cn } from "@/lib/utils";
 
 // Fits the printed QR, store name and join line on one letter page.

@@ -1,8 +1,8 @@
 "use server";
 
-import { createAction } from "@/lib/safe-action";
-import { requireManager } from "@/lib/session";
-import { rotateJoinLink } from "@/lib/store-invite";
+import { createAction } from "@/lib/core/safe-action";
+import { requireManager } from "@/lib/auth/session";
+import { rotateJoinLink } from "@/lib/store/store-invite";
 
 // Rotate the store's join link. The manager check runs first (no session goes
 // to `/unlock`, expired manager access to `/manage/login`; `createAction`

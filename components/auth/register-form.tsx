@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toFormErrors } from "@/lib/action-result";
+import { toFormErrors } from "@/lib/core/action-result";
 import {
   DEFAULT_TIMEZONE,
   PIN_LENGTH,

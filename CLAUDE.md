@@ -8,7 +8,7 @@ Next.js (App Router, TypeScript, Tailwind), Prisma 7 (`pg` driver adapter), Post
 
 ## Folder rules
 
-- All database and business logic goes in plain functions under `lib/` (for example `lib/pulls.ts`).
+- All database and business logic goes in plain functions under `lib/`, in a folder per area (for example `lib/pulls/pull-items.ts`).
 - Server actions and route handlers only call `lib/` functions. No Prisma calls in components or actions.
 - `lib/db.ts` exports the single Prisma client. Don't create another one.
 

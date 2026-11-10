@@ -2,8 +2,8 @@
 
 import { redirect } from "next/navigation";
 
-import { createAction } from "@/lib/safe-action";
-import { signInWithPassword } from "@/lib/sign-in";
+import { createAction } from "@/lib/core/safe-action";
+import { signInWithPassword } from "@/lib/auth/sign-in";
 import { signInSchema } from "@/lib/validations/sign-in.validation";
 
 // Password sign-in on a new browser, then on to `/today`. `createAction`

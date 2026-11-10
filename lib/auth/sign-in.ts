@@ -1,12 +1,12 @@
 import "server-only";
 
-import { MANAGER_TTL_MS, SESSION_TTL_MS } from "@/lib/auth-config";
+import { MANAGER_TTL_MS, SESSION_TTL_MS } from "@/lib/auth/auth-config";
 import { db } from "@/lib/db";
-import { AppError } from "@/lib/errors";
-import { afterFailedAttempt } from "@/lib/lockout";
-import { hashSecret, verifySecret } from "@/lib/passwords";
-import { assertGuest, setAuthCookies } from "@/lib/session";
-import { hashToken, newToken } from "@/lib/tokens";
+import { AppError } from "@/lib/core/errors";
+import { afterFailedAttempt } from "@/lib/auth/lockout";
+import { hashSecret, verifySecret } from "@/lib/auth/passwords";
+import { assertGuest, setAuthCookies } from "@/lib/auth/session";
+import { hashToken, newToken } from "@/lib/auth/tokens";
 import type { SignInValues } from "@/lib/validations/sign-in.validation";
 
 const WRONG = "Wrong username or password.";

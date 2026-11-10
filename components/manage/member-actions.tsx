@@ -27,7 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { ActionResult } from "@/lib/action-result";
+import type { ActionResult } from "@/lib/core/action-result";
 
 type MemberActionsProps = {
   userId: string;

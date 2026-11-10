@@ -29,6 +29,6 @@ Requires Node.js 20+ and a running Postgres database.
 
 ## Folder rules
 
-- All database and business logic lives in plain functions under `lib/` (for example `lib/pulls.ts`).
+- All database and business logic lives in plain functions under `lib/`, in a folder per area (for example `lib/pulls/pull-items.ts`).
 - Server actions and route handlers only call `lib/` functions. No Prisma calls in components or actions.
 - `lib/db.ts` exports the single shared Prisma client. Import it only from `lib/`.

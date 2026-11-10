@@ -3,8 +3,8 @@ import "server-only";
 import { unstable_rethrow } from "next/navigation";
 import { z } from "zod";
 
-import { fail, isActionResult, ok, type ActionResult } from "@/lib/action-result";
-import { AppError, mapPrismaError } from "@/lib/errors";
+import { fail, isActionResult, ok, type ActionResult } from "@/lib/core/action-result";
+import { AppError, mapPrismaError } from "@/lib/core/errors";
 
 // No "use server" here: such a file may only export async functions. The
 // action files that call createAction have "use server".

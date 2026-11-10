@@ -1,7 +1,7 @@
 import { JoinForm } from "@/components/auth/join-form";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getJoinStore } from "@/lib/join";
-import { requireGuest } from "@/lib/session";
+import { getJoinStore } from "@/lib/auth/join";
+import { requireGuest } from "@/lib/auth/session";
 
 // `/join/[token]` (docs/auth-flow.md 4.3). The guard runs before the token is
 // checked, so a signed-in phone goes to /today and a trusted or pending one

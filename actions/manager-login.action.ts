@@ -2,8 +2,8 @@
 
 import { redirect } from "next/navigation";
 
-import { confirmManagerPassword } from "@/lib/manager-access";
-import { createAction } from "@/lib/safe-action";
+import { confirmManagerPassword } from "@/lib/auth/manager-access";
+import { createAction } from "@/lib/core/safe-action";
 import { managerLoginSchema } from "@/lib/validations/manager-login.validation";
 
 // Password check for manager access, then on to `/manage`. Failures (wrong

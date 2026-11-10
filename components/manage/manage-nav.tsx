@@ -3,8 +3,8 @@ import { Suspense } from "react";
 import { APP_CONTAINER } from "@/components/layout/app-main";
 import { LockButton } from "@/components/manage/lock-button";
 import { ManageTabLinks, ManageTabs } from "@/components/manage/manage-tabs";
-import { countPendingMembers } from "@/lib/members";
-import { getSession, hasManagerAccess } from "@/lib/session";
+import { countPendingMembers } from "@/lib/store/members";
+import { getSession, hasManagerAccess } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
 
 // Tabs with the pending join requests count on Members. Reads the session

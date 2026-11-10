@@ -1,9 +1,9 @@
 import "server-only";
 
 import type { Prisma, Role, UserStatus } from "@/app/generated/prisma/client";
-import { IDLE_TIMEOUT_MS } from "@/lib/auth-config";
+import { IDLE_TIMEOUT_MS } from "@/lib/auth/auth-config";
 import { db } from "@/lib/db";
-import { AppError } from "@/lib/errors";
+import { AppError } from "@/lib/core/errors";
 
 /**
  * Store members for the manager's Members page: approve or reject join

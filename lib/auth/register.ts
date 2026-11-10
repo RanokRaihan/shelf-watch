@@ -1,10 +1,10 @@
 import "server-only";
 
-import { MANAGER_TTL_MS, SESSION_TTL_MS } from "@/lib/auth-config";
+import { MANAGER_TTL_MS, SESSION_TTL_MS } from "@/lib/auth/auth-config";
 import { db } from "@/lib/db";
-import { hashSecret } from "@/lib/passwords";
-import { assertGuest, setAuthCookies } from "@/lib/session";
-import { hashToken, newToken } from "@/lib/tokens";
+import { hashSecret } from "@/lib/auth/passwords";
+import { assertGuest, setAuthCookies } from "@/lib/auth/session";
+import { hashToken, newToken } from "@/lib/auth/tokens";
 import type { RegisterValues } from "@/lib/validations/register.validation";
 
 export type RegisteredManager = { name: string; storeName: string };

@@ -5,9 +5,9 @@ import { MemberRow } from "@/components/manage/member-row";
 import { PendingMembers } from "@/components/manage/pending-members";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { listMembers, type MemberSummary } from "@/lib/members";
-import { timeAgo } from "@/lib/relative-time";
-import { requireManager } from "@/lib/session";
+import { listMembers, type MemberSummary } from "@/lib/store/members";
+import { timeAgo } from "@/lib/format/relative-time";
+import { requireManager } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
 
 function MemberSection({

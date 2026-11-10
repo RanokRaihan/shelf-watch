@@ -9,7 +9,7 @@ import { TextField } from "@/components/auth/text-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FieldError, FieldGroup } from "@/components/ui/field";
-import { toFormErrors } from "@/lib/action-result";
+import { toFormErrors } from "@/lib/core/action-result";
 import {
   signInSchema,
   type SignInValues,
