@@ -25,7 +25,7 @@ export async function RegisterContent() {
       <p className="text-center text-base text-muted-foreground">
         Already have an account?{" "}
         <Link
-          href="/signin"
+          href="/sign-in"
           className="font-medium text-foreground underline underline-offset-4"
         >
           Sign in

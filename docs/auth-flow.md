@@ -156,6 +156,14 @@ Standard email reset link. This needs an email sending service set up before lau
 2. Before the new role takes effect, that user must add an email and password.
 3. Reason: members join with only username, phone and PIN. A manager without a password would be able to do manager things with just a PIN.
 
+### 4.12 Manager signs in on a new device
+For a manager (or anyone with a password) on a browser that has no trusted device, so there's no PIN screen and no QR to scan. Members have no password; they use the store QR (4.3, 4.7).
+1. Opens `/sign-in`. Only a browser with no session, no trusted device and no pending device sees it; the others go to `/today`, `/unlock` or `/pending`.
+2. Enters username or email, and password.
+3. The user must have a password, be ACTIVE, and not be locked. Every failure shows the same message, "Wrong username or password.", so the page never reveals whether an account exists.
+4. On success a new approved Device is created for this user (`sw_device` is set, replacing any old cookie; a revoked device row left in the browser isn't touched), and a session starts with manager access, since they just typed their password.
+5. They land on `/today`. Next time on this browser they only need their PIN.
+
 ---
 
 ## 5. Brute force protection
@@ -166,7 +174,8 @@ Standard email reset link. This needs an email sending service set up before lau
 - A correct PIN resets the count.
 
 ### Password
-- Same idea with `failedPasswordAttempts` and `passwordLockedUntil`.
+- Sign in (`/sign-in`, 4.12): same idea as the PIN, with `failedPasswordAttempts` and `passwordLockedUntil` on User: 5 wrong tries lock for about 1, then 5, then 15 minutes. While locked the password isn't checked, and the page shows the same "Wrong username or password." as any other failure.
+- Manager access (`/manage/login`, 4.5): counted on the Session instead (`Session.failedPasswordAttempts`), so nobody can lock a manager out of manager access from outside. After 5 wrong tries the session is deleted and they unlock with their PIN again. A correct password resets the count. It doesn't read or write the User lock fields.
 
 ### Storing secrets
 - PINs and passwords are stored only as hashes (bcrypt or argon2).

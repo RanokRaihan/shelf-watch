@@ -235,7 +235,7 @@ export async function getEntryRoute(): Promise<EntryRoute | null> {
 }
 
 /**
- * Guard for guest-only pages (`/register`, `/join/[token]`, later `/signin`).
+ * Guard for guest-only pages (`/register`, `/join/[token]`, `/sign-in`).
  * Sends a signed-in phone to `/today`, a trusted device to `/unlock` and a
  * pending one to `/pending`. Call it in the page's Suspense child, before rendering content.
  */

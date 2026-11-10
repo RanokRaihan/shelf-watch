@@ -85,16 +85,16 @@ model Device {
 }
 
 model Session {
-  id           String    @id // sha256 of the cookie token
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deviceId     String
-  device       Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  managerUntil DateTime?
-  failedPasswordAttempts Int @default(0) // wrong passwords on /manage/login
-  lastActiveAt DateTime  @default(now())
-  expiresAt    DateTime
-  createdAt    DateTime  @default(now())
+  id                     String    @id // sha256 of the cookie token
+  userId                 String
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId               String
+  device                 Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  managerUntil           DateTime?
+  failedPasswordAttempts Int       @default(0) // wrong passwords on /manage/login
+  lastActiveAt           DateTime  @default(now())
+  expiresAt              DateTime
+  createdAt              DateTime  @default(now())
 
   @@index([userId])
   @@index([deviceId])
