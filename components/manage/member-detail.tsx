@@ -1,4 +1,4 @@
-import { ArrowLeft, Smartphone } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -7,8 +7,15 @@ import { MemberActions } from "@/components/manage/member-actions";
 import { MemberAvatar, roleLabel, StatusPill } from "@/components/manage/member-row";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getMember, memberActionKind, type MemberDetail as Member } from "@/lib/members";
+import {
+  type ActiveSession,
+  getMember,
+  listActiveSessions,
+  memberActionKind,
+  type MemberDetail as Member,
+} from "@/lib/members";
 import { formatPhone } from "@/lib/phone";
+import { timeAgo } from "@/lib/relative-time";
 import { requireManager } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +36,75 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+// Small tag next to a session's phone name ("This phone", "Manager access").
+function SessionTag({ children, accent }: { children: React.ReactNode; accent?: boolean }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium",
+        accent ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function ActiveSessionsCard({
+  sessions,
+  now,
+  dateTimeFormat,
+}: {
+  sessions: ActiveSession[];
+  now: Date;
+  dateTimeFormat: Intl.DateTimeFormat;
+}) {
+  return (
+    <Card className="pb-0">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold">
+          Active sessions
+          {sessions.length > 0 ? (
+            <span className="font-normal text-muted-foreground"> ({sessions.length})</span>
+          ) : null}
+        </CardTitle>
+      </CardHeader>
+      {sessions.length === 0 ? (
+        <CardContent className="pb-4">
+          <p className="text-base text-muted-foreground">Not signed in right now.</p>
+        </CardContent>
+      ) : (
+        <ul className="divide-y border-t">
+          {sessions.map((session, i) => (
+            <li key={i} className="flex items-start gap-3 px-4 py-3">
+              <Smartphone
+                aria-hidden="true"
+                className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+              />
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="truncate text-base font-medium">{session.deviceLabel ?? "Phone"}</p>
+                  {session.isCurrent ? <SessionTag>This phone</SessionTag> : null}
+                  {session.hasManagerAccess ? (
+                    <SessionTag accent>
+                      <ShieldCheck aria-hidden="true" className="size-3.5" />
+                      Manager access
+                    </SessionTag>
+                  ) : null}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Signed in {dateTimeFormat.format(session.createdAt)} · Active{" "}
+                  {timeAgo(session.lastActiveAt, now)}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
 function BackLink() {
   return (
     <Link
@@ -44,13 +120,17 @@ function BackLink() {
   );
 }
 
-// `/manage/members/[id]`: one member's details and devices, with the same ⋯
+// `/manage/members/[id]`: one member's details, active sessions and devices, with the same ⋯
 // actions as the list. Only members of the manager's own store are found;
 // anything else is a 404. Reads cookies and params, so render it inside Suspense.
 export async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { user } = await requireManager();
+  const { user, session } = await requireManager();
   const { id } = await params;
-  const member = await getMember(user.storeId, id);
+  const now = new Date();
+  const [member, sessions] = await Promise.all([
+    getMember(user.storeId, id),
+    listActiveSessions(user.storeId, id, session.id, now),
+  ]);
   if (!member) notFound();
 
   const isYou = member.id === user.id;
@@ -116,6 +196,10 @@ export async function MemberDetail({ params }: { params: Promise<{ id: string }>
         </CardContent>
       </Card>
 
+      {member.status === "ACTIVE" ? (
+        <ActiveSessionsCard sessions={sessions} now={now} dateTimeFormat={dateTimeFormat} />
+      ) : null}
+
       <Card className="pb-0">
         <CardHeader>
           <CardTitle className="text-lg font-semibold">Phones</CardTitle>
@@ -165,6 +249,7 @@ export function MemberDetailSkeleton() {
         </div>
       </div>
       <div className="h-56 animate-pulse rounded-xl bg-muted" />
+      <div className="h-32 animate-pulse rounded-xl bg-muted" />
       <div className="h-32 animate-pulse rounded-xl bg-muted" />
     </div>
   );

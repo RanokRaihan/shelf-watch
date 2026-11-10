@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { Prisma, Role, UserStatus } from "@/app/generated/prisma/client";
+import { IDLE_TIMEOUT_MS } from "@/lib/auth-config";
 import { db } from "@/lib/db";
 import { AppError } from "@/lib/errors";
 
@@ -81,6 +82,58 @@ export async function getMember(
     where: { id: targetId, storeId },
     select: memberDetailSelect,
   });
+}
+
+export type ActiveSession = {
+  deviceLabel: string | null;
+  createdAt: Date;
+  lastActiveAt: Date;
+  expiresAt: Date;
+  /** Manager access is current on this session (password in the last 15 min). */
+  hasManagerAccess: boolean;
+  /** The session the viewing manager is using right now. */
+  isCurrent: boolean;
+};
+
+/**
+ * A member's sessions that would still pass `getSession()` right now: not
+ * expired, not idle, on an approved and unrevoked device, user ACTIVE. Ended
+ * sessions are deleted lazily on their next request, so stale rows can still
+ * exist and are filtered out here. Session ids (token hashes) never leave
+ * this function; `currentSessionId` only marks the viewer's own session.
+ */
+export async function listActiveSessions(
+  storeId: string,
+  targetId: string,
+  currentSessionId: string,
+  now: Date = new Date(),
+): Promise<ActiveSession[]> {
+  const rows = await db.session.findMany({
+    where: {
+      userId: targetId,
+      user: { storeId, status: "ACTIVE" },
+      expiresAt: { gt: now },
+      lastActiveAt: { gt: new Date(now.getTime() - IDLE_TIMEOUT_MS) },
+      device: { approvedAt: { not: null }, revokedAt: null },
+    },
+    select: {
+      id: true,
+      createdAt: true,
+      lastActiveAt: true,
+      expiresAt: true,
+      managerUntil: true,
+      device: { select: { label: true } },
+    },
+    orderBy: { lastActiveAt: "desc" },
+  });
+  return rows.map((row) => ({
+    deviceLabel: row.device.label,
+    createdAt: row.createdAt,
+    lastActiveAt: row.lastActiveAt,
+    expiresAt: row.expiresAt,
+    hasManagerAccess: row.managerUntil !== null && row.managerUntil > now,
+    isCurrent: row.id === currentSessionId,
+  }));
 }
 
 /** Which actions the acting manager may take on a member. */

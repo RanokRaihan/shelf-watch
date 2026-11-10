@@ -91,6 +91,7 @@ model Session {
   deviceId     String
   device       Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   managerUntil DateTime?
+  failedPasswordAttempts Int @default(0) // wrong passwords on /manage/login
   lastActiveAt DateTime  @default(now())
   expiresAt    DateTime
   createdAt    DateTime  @default(now())
