@@ -13,7 +13,7 @@ import { AppError } from "@/lib/core/errors";
  * never from client input. Every lookup is scoped by `storeId`, so a user id
  * from another store behaves as if it doesn't exist.
  */
-export type MemberActor = { storeId: string; userId: string };
+export type MemberActor = { storeId: string; userId: string; deviceId: string };
 
 type Tx = Prisma.TransactionClient;
 
@@ -85,6 +85,7 @@ export async function getMember(
 }
 
 export type ActiveSession = {
+  deviceId: string;
   deviceLabel: string | null;
   createdAt: Date;
   lastActiveAt: Date;
@@ -122,11 +123,13 @@ export async function listActiveSessions(
       lastActiveAt: true,
       expiresAt: true,
       managerUntil: true,
+      deviceId: true,
       device: { select: { label: true } },
     },
     orderBy: { lastActiveAt: "desc" },
   });
   return rows.map((row) => ({
+    deviceId: row.deviceId,
     deviceLabel: row.device.label,
     createdAt: row.createdAt,
     lastActiveAt: row.lastActiveAt,
@@ -242,5 +245,72 @@ export async function removeMember(
       data: { revokedAt: now },
     });
     return { name: member.name };
+  });
+}
+
+type MemberDevice = { id: string; label: string | null; revokedAt: Date | null };
+
+// Locks the member, then finds one of their phones. Shared guards for
+// signing out a session and revoking a phone.
+async function lockMemberDevice(
+  tx: Tx,
+  actor: MemberActor,
+  targetId: string,
+  deviceId: string,
+): Promise<{ member: LockedMember; device: MemberDevice }> {
+  if (deviceId === actor.deviceId) {
+    throw new AppError("FORBIDDEN", "Use Log out to sign out of this phone.");
+  }
+  const member = await lockMember(tx, actor.storeId, targetId);
+  if (member.status !== "ACTIVE") {
+    throw new AppError("CONFLICT", "This person isn't an active member.");
+  }
+  const device = await tx.device.findFirst({
+    where: { id: deviceId, userId: member.id, storeId: actor.storeId },
+    select: { id: true, label: true, revokedAt: true },
+  });
+  if (!device) throw new AppError("NOT_FOUND", "We couldn't find that phone.");
+  return { member, device };
+}
+
+/**
+ * Sign a member out of one phone. A phone has at most one session (unlock
+ * replaces it), so the device id names the session without exposing its id.
+ * The phone stays trusted; they unlock with their PIN again.
+ */
+export async function endMemberSession(
+  actor: MemberActor,
+  targetId: string,
+  deviceId: string,
+): Promise<{ name: string; deviceLabel: string | null }> {
+  return db.$transaction(async (tx) => {
+    const { member, device } = await lockMemberDevice(tx, actor, targetId, deviceId);
+    const { count } = await tx.session.deleteMany({
+      where: { deviceId: device.id, userId: member.id },
+    });
+    if (count === 0) {
+      throw new AppError("CONFLICT", "They're already signed out on that phone.");
+    }
+    return { name: member.name, deviceLabel: device.label };
+  });
+}
+
+/**
+ * Revoke a phone (4.10): `revokedAt` is set and its sessions are deleted in
+ * the same transaction, so it stops working on its next request.
+ */
+export async function revokeMemberDevice(
+  actor: MemberActor,
+  targetId: string,
+  deviceId: string,
+): Promise<{ name: string; deviceLabel: string | null }> {
+  return db.$transaction(async (tx) => {
+    const { member, device } = await lockMemberDevice(tx, actor, targetId, deviceId);
+    if (device.revokedAt) {
+      throw new AppError("CONFLICT", "That phone was already revoked.");
+    }
+    await tx.device.update({ where: { id: device.id }, data: { revokedAt: new Date() } });
+    await tx.session.deleteMany({ where: { deviceId: device.id } });
+    return { name: member.name, deviceLabel: device.label };
   });
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import type { UserStatus } from "@/app/generated/prisma/client";
+import { DeviceActionButton } from "@/components/manage/device-actions";
 import { MemberActions } from "@/components/manage/member-actions";
 import { MemberAvatar, roleLabel, StatusPill } from "@/components/manage/member-row";
 import { buttonVariants } from "@/components/ui/button";
@@ -51,10 +52,14 @@ function SessionTag({ children, accent }: { children: React.ReactNode; accent?: 
 }
 
 function ActiveSessionsCard({
+  userId,
+  name,
   sessions,
   now,
   dateTimeFormat,
 }: {
+  userId: string;
+  name: string;
   sessions: ActiveSession[];
   now: Date;
   dateTimeFormat: Intl.DateTimeFormat;
@@ -75,8 +80,8 @@ function ActiveSessionsCard({
         </CardContent>
       ) : (
         <ul className="divide-y border-t">
-          {sessions.map((session, i) => (
-            <li key={i} className="flex items-start gap-3 px-4 py-3">
+          {sessions.map((session) => (
+            <li key={session.deviceId} className="flex items-start gap-3 px-4 py-3">
               <Smartphone
                 aria-hidden="true"
                 className="mt-0.5 size-5 shrink-0 text-muted-foreground"
@@ -97,6 +102,15 @@ function ActiveSessionsCard({
                   {timeAgo(session.lastActiveAt, now)}
                 </p>
               </div>
+              {session.isCurrent ? null : (
+                <DeviceActionButton
+                  userId={userId}
+                  deviceId={session.deviceId}
+                  name={name}
+                  deviceLabel={session.deviceLabel}
+                  kind="sign-out"
+                />
+              )}
             </li>
           ))}
         </ul>
@@ -124,7 +138,7 @@ function BackLink() {
 // actions as the list. Only members of the manager's own store are found;
 // anything else is a 404. Reads cookies and params, so render it inside Suspense.
 export async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { user, session } = await requireManager();
+  const { user, session, device: currentDevice } = await requireManager();
   const { id } = await params;
   const now = new Date();
   const [member, sessions] = await Promise.all([
@@ -197,7 +211,13 @@ export async function MemberDetail({ params }: { params: Promise<{ id: string }>
       </Card>
 
       {member.status === "ACTIVE" ? (
-        <ActiveSessionsCard sessions={sessions} now={now} dateTimeFormat={dateTimeFormat} />
+        <ActiveSessionsCard
+          userId={member.id}
+          name={member.name}
+          sessions={sessions}
+          now={now}
+          dateTimeFormat={dateTimeFormat}
+        />
       ) : null}
 
       <Card className="pb-0">
@@ -212,11 +232,16 @@ export async function MemberDetail({ params }: { params: Promise<{ id: string }>
           <ul className="divide-y border-t">
             {member.devices.map((device) => {
               const state = deviceState(device);
+              const isCurrent = device.id === currentDevice.id;
+              const canRevoke = member.status === "ACTIVE" && !device.revokedAt && !isCurrent;
               return (
                 <li key={device.id} className="flex items-center gap-3 px-4 py-3">
                   <Smartphone aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <p className="truncate text-base font-medium">{device.label ?? "Phone"}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="truncate text-base font-medium">{device.label ?? "Phone"}</p>
+                      {isCurrent ? <SessionTag>This phone</SessionTag> : null}
+                    </div>
                     <p className="truncate text-sm text-muted-foreground">
                       Added {dateFormat.format(device.createdAt)}
                       {device.lastSeenAt
@@ -225,6 +250,15 @@ export async function MemberDetail({ params }: { params: Promise<{ id: string }>
                     </p>
                   </div>
                   <StatusPill status={state.status} label={state.label} />
+                  {canRevoke ? (
+                    <DeviceActionButton
+                      userId={member.id}
+                      deviceId={device.id}
+                      name={member.name}
+                      deviceLabel={device.label}
+                      kind="revoke"
+                    />
+                  ) : null}
                 </li>
               );
             })}
