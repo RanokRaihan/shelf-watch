@@ -46,9 +46,9 @@ Barcode-scan tool for retail teams to track product pull dates. This file holds 
 
 ## Folder layout
 
-- `app/`: routes only. `(auth)/` holds guest and entry pages (`/register`, `/sign-in`, `/join/[token]`, `/unlock`, `/pending`); `(app)/` holds signed-in pages (`/today`, `/manage/*`). Manager pages with the tab bar are in `(app)/manage/(tabs)/`; `/manage/login` sits outside it.
+- `app/`: routes only. `(auth)/` holds guest and entry pages (`/register`, `/sign-in`, `/join/[token]`, `/unlock`, `/pending`); `(app)/` holds signed-in pages (`/today`, `/scan`, `/manage/*`). Manager pages with the tab bar are in `(app)/manage/(tabs)/`; `/manage/login` sits outside it.
 - `actions/`: server actions, one `"use server"` file per feature, named `<feature>.action.ts`. Never inside `app/`.
-- `components/<feature>/` (`auth/`, `today/`, `manage/`): page sections, guards and skeletons. `components/layout/`: shared app chrome. `components/ui/`: shadcn components.
+- `components/<feature>/` (`auth/`, `today/`, `scan/`, `manage/`): page sections, guards and skeletons. `components/layout/`: shared app chrome. `components/ui/`: shadcn components.
 - `lib/`: all database and business logic, as plain functions.
   - `db.ts` (the single Prisma client; don't create another) and `utils.ts` (shadcn `cn`) stay at the root.
   - `core/`: action plumbing and app-wide server helpers (`action-result`, `safe-action`, `errors`, `app-url`).
@@ -74,7 +74,7 @@ Barcode-scan tool for retail teams to track product pull dates. This file holds 
 
 Every page calls its own guard from `lib/auth/session.ts` in a `Suspense` child that wraps its content, never in a layout.
 
-- Private pages (`/today`): `requireSession()`. No session goes to `/unlock`.
+- Private pages (`/today`, `/scan`): `requireSession()`. No session goes to `/unlock`.
 - Manager pages (`/manage/*`): `requireManager()`. Colleagues go to `/today`; managers without recent password access go to `/manage/login`.
 - `/manage/login`: `requireManagerLogin()`. A manager who already has access goes to `/manage`.
 - Guest-only pages (`/register`, `/sign-in`, `/join/[token]`): `requireGuest()`. A session goes to `/today`, a trusted device to `/unlock`, a pending one to `/pending`.
