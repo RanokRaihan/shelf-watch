@@ -59,8 +59,10 @@ model StoreInvite {
   store       Store     @relation(fields: [storeId], references: [id])
   createdById String
   createdBy   User      @relation(fields: [createdById], references: [id])
-  tokenHash   String    @unique
-  expiresAt   DateTime
+  // Plain token, not a hash: join links are public by design (docs/auth-flow.md 5).
+  token       String    @unique
+  // Null = never expires. Store join links have no expiry; Rotate revokes them.
+  expiresAt   DateTime?
   revokedAt   DateTime?
   createdAt   DateTime  @default(now())
 }
@@ -83,15 +85,16 @@ model Device {
 }
 
 model Session {
-  id           String    @id // sha256 of the cookie token
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deviceId     String
-  device       Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  managerUntil DateTime?
-  lastActiveAt DateTime  @default(now())
-  expiresAt    DateTime
-  createdAt    DateTime  @default(now())
+  id                     String    @id // sha256 of the cookie token
+  userId                 String
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId               String
+  device                 Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  managerUntil           DateTime?
+  failedPasswordAttempts Int       @default(0) // wrong passwords on /manage/login
+  lastActiveAt           DateTime  @default(now())
+  expiresAt              DateTime
+  createdAt              DateTime  @default(now())
 
   @@index([userId])
   @@index([deviceId])

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { RegisterForm } from "@/components/auth/register-form";
-import { requireGuest } from "@/lib/session";
+import { requireGuest } from "@/lib/auth/session";
 
 // Signed-in phones go to /today and trusted or pending devices to /unlock
 // before any of the form is rendered. Render it inside Suspense
@@ -25,7 +25,7 @@ export async function RegisterContent() {
       <p className="text-center text-base text-muted-foreground">
         Already have an account?{" "}
         <Link
-          href="/signin"
+          href="/sign-in"
           className="font-medium text-foreground underline underline-offset-4"
         >
           Sign in

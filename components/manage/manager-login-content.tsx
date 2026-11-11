@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { requireManagerLogin } from "@/lib/session";
+import { requireManagerLogin } from "@/lib/auth/session";
 
 // Only a signed-in manager without current manager access gets here: no
 // session goes to /unlock, colleagues to /today, and a manager who already

@@ -2,13 +2,13 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
-import { DEVICE_COOKIE, SESSION_TTL_MS } from "@/lib/auth-config";
+import { DEVICE_COOKIE, SESSION_TTL_MS } from "@/lib/auth/auth-config";
 import { db } from "@/lib/db";
-import { AppError } from "@/lib/errors";
-import { lockedMessage, afterFailedAttempt } from "@/lib/lockout";
-import { verifySecret } from "@/lib/passwords";
-import { getSession, setAuthCookies } from "@/lib/session";
-import { hashToken, newToken } from "@/lib/tokens";
+import { AppError } from "@/lib/core/errors";
+import { lockedMessage, afterFailedAttempt } from "@/lib/auth/lockout";
+import { verifySecret } from "@/lib/auth/passwords";
+import { getSession, setAuthCookies } from "@/lib/auth/session";
+import { hashToken, newToken } from "@/lib/auth/tokens";
 import type { UnlockValues } from "@/lib/validations/unlock.validation";
 
 /**

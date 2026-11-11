@@ -9,13 +9,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { initials } from "@/lib/initials";
-import { getDevice, getSession } from "@/lib/session";
+import { initials } from "@/lib/format/initials";
+import { getDevice, getSession } from "@/lib/auth/session";
 
-// PIN screen (docs/auth-flow.md 4.4), plus the pending and unknown-device
-// states. Never links or redirects to `/`: `/` sends trusted devices here, and
-// a revoked device must not bounce between the two. Reads cookies, so render it
-// inside Suspense (cacheComponents).
+// PIN screen (docs/auth-flow.md 4.4), plus the unknown-device state. Pending
+// devices go to /pending. Never links or redirects to `/`: `/` sends trusted
+// devices here, and a revoked device must not bounce between the two. Reads
+// cookies, so render it inside Suspense (cacheComponents).
 export async function UnlockContent() {
   if (await getSession()) redirect("/today");
 
@@ -48,19 +48,8 @@ export async function UnlockContent() {
     );
   }
 
-  if (device.state === "pending") {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Waiting for manager approval</CardTitle>
-          <CardDescription className="text-base">
-            A manager at {device.store.name} needs to approve this phone. Open
-            the app again once they have.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
+  // /pending never sends a pending device back here, so this can't loop.
+  if (device.state === "pending") redirect("/pending");
 
   return (
     <Card>

@@ -197,7 +197,7 @@ export default function Home() {
           <div className="flex items-center gap-2 sm:gap-4">
             <ModeToggle />
             <Link
-              href="/signin"
+              href="/sign-in"
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "hidden h-12 px-3 text-base font-bold sm:inline-flex",
@@ -231,7 +231,7 @@ export default function Home() {
                   Create your store
                 </Link>
                 <Link
-                  href="/signin"
+                  href="/sign-in"
                   className={cn(
                     buttonVariants({ size: "lg", variant: "outline" }),
                     CTA_SIZE,
@@ -340,7 +340,7 @@ export default function Home() {
               Create your store
             </Link>
             <Link
-              href="/signin"
+              href="/sign-in"
               className={cn(
                 buttonVariants({ size: "lg", variant: "ghost" }),
                 CTA_SIZE,

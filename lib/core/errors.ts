@@ -1,7 +1,7 @@
 import "server-only";
 
 import { Prisma } from "@/app/generated/prisma/client";
-import { fail, type ActionFailure, type ErrorCode, type FieldErrors } from "@/lib/action-result";
+import { fail, type ActionFailure, type ErrorCode, type FieldErrors } from "@/lib/core/action-result";
 
 /**
  * Expected business errors. Throw these from `lib/` functions; `createAction`

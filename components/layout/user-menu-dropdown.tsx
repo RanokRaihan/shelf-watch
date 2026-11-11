@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { initials } from "@/lib/initials";
+import { initials } from "@/lib/format/initials";
 
 type UserMenuDropdownProps = {
   name: string;

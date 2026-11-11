@@ -10,124 +10,121 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # ShelfWatch: agent notes
 
-Barcode-scan tool for retail teams to track product pull dates. Keep this file updated after every file creation, deletion, or architecture decision.
+Barcode-scan tool for retail teams to track product pull dates. This file holds only what the code doesn't tell you. Read the code for what each file does.
+
+## Keeping this file lean
+
+- Update this file only when a command, rule, the folder layout, or a gotcha changes. Don't list files or describe what a component renders; that's what the code is for.
+- Record architecture decisions in `docs/decisions.md`. When one changes, edit or replace its entry instead of appending, so it only says what's true now.
+- Aim to keep this file around 150 lines. If a section grows, move the detail to `docs/` and link it.
+- Don't use Markdown tables here; formatters pad them to huge widths.
+
+## Commands
+
+- `npm run dev` (dev server), `npm run build`, `npm run lint`. There's no test script.
+- `npm install` runs `prisma generate` (`postinstall`). The Prisma CLI config is `prisma7.config.ts` (schema and migrations paths, `DATABASE_URL` via dotenv).
+- Don't run migrations. Ranok runs them, or approves a one-time exception.
+
+## Stack
+
+- Next.js 16 (App Router, TypeScript, Tailwind) with `cacheComponents` and `partialPrefetching` on. One app, no separate backend.
+- Prisma 7.10.1 (pinned) with the `@prisma/adapter-pg` driver adapter, on Postgres. The generated client is in `app/generated/prisma/` (gitignored).
+- shadcn/ui, style `base-nova`, built on `@base-ui/react`, not Radix. Toasts with `sonner`, forms with `@tanstack/react-form` + `zod`, hashing with `bcryptjs`, QR with `qrcode`, themes with `next-themes`.
+- `.env`: `DATABASE_URL`, and optional `APP_URL` (public origin for join links; set it in production). See `.env.example`.
+
+## Docs
+
+- `docs/auth-flow.md`: Ranok's auth design (PIN, password, devices, sessions, manager access, user flows). Read it before touching auth. If the code and the doc disagree, ask.
+- `docs/decisions.md`: current architecture decisions and why.
+- `node_modules/next/dist/docs/`: the Next.js guides for this version.
+
+## Scope
+
+- Core loop (scan, set pull date, today's list) plus auth as described in `docs/auth-flow.md`.
+- No notifications or analytics until Ranok says so.
+- Never create or change the Prisma schema (`prisma/schema.prisma`); Ranok owns it.
+
+## Folder layout
+
+- `app/`: routes only. `(auth)/` holds guest and entry pages (`/register`, `/sign-in`, `/join/[token]`, `/unlock`, `/pending`); `(app)/` holds signed-in pages (`/today`, `/manage/*`). Manager pages with the tab bar are in `(app)/manage/(tabs)/`; `/manage/login` sits outside it.
+- `actions/`: server actions, one `"use server"` file per feature, named `<feature>.action.ts`. Never inside `app/`.
+- `components/<feature>/` (`auth/`, `today/`, `manage/`): page sections, guards and skeletons. `components/layout/`: shared app chrome. `components/ui/`: shadcn components.
+- `lib/`: all database and business logic, as plain functions.
+  - `db.ts` (the single Prisma client; don't create another) and `utils.ts` (shadcn `cn`) stay at the root.
+  - `core/`: action plumbing and app-wide server helpers (`action-result`, `safe-action`, `errors`, `app-url`).
+  - `auth/`: auth, sessions, devices and secrets. `store/`: store management (members, invites, QR). `format/`: pure display helpers, safe on client and server. `validations/`: Zod schemas, named `<feature>.validation.ts`.
+  - A new feature gets its own folder (for example `lib/pulls/pull-items.ts`).
+  - Import with the full path (`@/lib/auth/session`). No barrel `index.ts` files.
 
 ## Rules
 
-- Scope: Core loop (scan, set pull date, today's list) plus auth as described in `docs/auth-flow.md`. No notifications or analytics until I say so. Never create or change the Prisma schema; Ranok owns it.
-- All database and business logic goes in plain functions under `lib/` (for example `lib/pulls.ts`).
 - Server actions and route handlers only call `lib/` functions. No Prisma calls in components or actions.
-- Server actions live in the top-level `actions/` directory, one `"use server"` file per feature (for example `actions/register.action.ts`). Never put them inside `app/`.
-- File naming: kebab-case base name plus a dot role suffix. Zod schemas go in `lib/validations/<feature>.validation.ts`, server actions in `actions/<feature>.action.ts`. Multi-word features use kebab-case (`store-invite.action.ts`). Don't use `_` (a leading `_` marks a private folder in `app/`).
-- Don't run migrations.
-- Page protection: every page calls its own guard from `lib/session.ts` in a `Suspense` child that wraps its content, never in a layout. Private pages (`/today`) call `requireSession()` (no session goes to `/unlock`). Manager pages (`/manage`) call `requireManager()` (colleagues go to `/today`, managers without recent password access to `/manage/login`), and `/manage/login` calls `requireManagerLogin()` (a manager who already has access goes to `/manage`). Guest-only pages (`/register`, later `/signin` and `/join`) call `requireGuest()` (a session goes to `/today`, a trusted or pending device to `/unlock`). Entry pages are `/` (`getEntryRoute()`) and `/unlock`, which never sends anyone to `/`. Mutations check too: guest-only ones call `assertGuest()`, private ones call `getSession()` / `requireSession()`, and manager ones will call `requireManager()`.
-- `components/ui/button.tsx` and `components/ui/input.tsx` keep shadcn's stock sizes (button default `h-8`, `sm` `h-7`, `lg` `h-9`; input `h-8`). For phone-first touch sizes, set them where the component is used with `className`, as the landing page and register form do (`h-12 text-base`).
+- File names: kebab-case base name plus a dot role suffix (`store-invite.action.ts`). Don't use `_` (a leading `_` marks a private folder in `app/`).
+- Keep `page.tsx` and `layout.tsx` thin: metadata, the page shell, `Suspense` boundaries, and composing components. A section's skeleton is exported from the same file as the section.
+- Use shadcn components and theme tokens (`bg-background`, `bg-muted`, `bg-primary`, `text-muted-foreground`, …). No hardcoded colors, and `primary` is the only accent. Exception: the QR code and its printed text are fixed black on white so they stay scannable.
+- `components/ui/` has only `button`, `input`, `label`, `card`, `separator`, `field`, `select`, `sonner`, `dropdown-menu`, `alert-dialog`. Add more only when asked.
+- `button` and `input` keep shadcn's stock sizes (button `h-8`, `sm` `h-7`, `lg` `h-9`; input `h-8`). Set phone-first touch sizes where they're used with `className` (`h-12 text-base`).
 - Don't change theme colors or radius in `app/globals.css`; Ranok sets those.
-- Keep `page.tsx` and `layout.tsx` thin: metadata, the page shell, `Suspense` boundaries, and composing components. Page sections, guards and skeletons go in `components/<feature>/` (`auth/`, `today/`, `manage/`), and shared app chrome goes in `components/layout/`. A section's skeleton is exported from the same file as the section.
-- Use shadcn as much as possible: components from `components/ui/` and theme tokens (`bg-background`, `bg-muted`, `bg-primary`, `text-muted-foreground`, and so on). No hardcoded colors in pages or components.
+- Comments: only when the code isn't clear on its own, one short line. No multi-line or block comments.
+- Every server action is built with `createAction` (`lib/core/safe-action.ts`) and returns an `ActionResult`. `lib/` functions throw `AppError` for expected errors.
+- Usernames and emails are stored lowercase. Reuse `usernameSchema` and `phoneSchema` (US only, normalized to E.164) wherever a username or phone is entered, and lowercase emails before lookup.
+- Every auth form has `method="post"`, so a submit before hydration never puts a PIN or password in the URL.
 
-## Files
+## Page protection
 
-| Path | Purpose |
-| --- | --- |
-| `app/page.tsx` | Landing page (server component), built from shadcn `Card` and `buttonVariants` with theme tokens only. Bricolage Grotesque headline font is loaded here. Links to `/register` and `/signin` (`/signin` doesn't exist yet). A null-fallback `Suspense` holds `EntryRedirect` (`components/auth/entry-redirect.tsx`); everyone it doesn't redirect sees the landing page, which stays in the static shell |
-| `app/layout.tsx` | Root layout, page metadata (title "ShelfWatch"), `ThemeProvider`, and the sonner `Toaster` (top center) |
-| `app/generated/prisma/` | Generated Prisma client (gitignored, rebuilt by `npm install` / `prisma generate`) |
-| `app/not-found.tsx` | Two-column 404 page: message and home link on the left, a shelf with one empty spot on the right, with a scan line sweeping across the shelf and back on a loop, easing at both ends and slowing without stopping at the gap in the middle (off for reduced motion). Theme tokens only. Loads Bricolage Grotesque like the landing page |
-| `app/(app)/manage/page.tsx` | Placeholder manager home at `/manage` (dashboard comes later): `ManageWelcome` inside `Suspense` (required with `cacheComponents` to read cookies). The shell comes from `app/(app)/layout.tsx` |
-| `app/(app)/manage/login/page.tsx` | `/manage/login`, the password screen for manager access (auth-flow 4.5): `ManagerLoginContent` inside `Suspense` |
-| `app/(app)/today/page.tsx` | `/today`: renders `TodayContent` in `Suspense` with `TodaySkeleton` as the fallback |
-| `app/(app)/layout.tsx` | Shell for every signed-in page (`/today`, `/manage`, `/manage/login`): `AppNav` on top, then a `main` that is `max-w-xl` on phones and `lg:max-w-3xl` on desktop. No auth check here |
-| `app/(auth)/unlock/page.tsx` | `/unlock`: static header (no link to `/`), then `UnlockContent` in `Suspense`, centered vertically in a `max-w-md` column |
-| `app/(auth)/register/page.tsx` | Signup page at `/register`, the URL the landing page links to. Static header with a back arrow to `/` before the ShelfWatch name, then `RegisterContent` in `Suspense` |
-| `components/ui/` | shadcn/ui components: `button`, `input`, `label`, `card`, `separator`, `field`, `select`, `sonner`, `dropdown-menu` only. Add more only when asked |
-| `components/auth/register-form.tsx` | Signup form (client component, TanStack Form). Store info section first, then personal info, stacked on phones. From `lg` up each section has its heading on the left and a 2-column field grid on the right. Personal info order on desktop: Name | Username, Email (required) | Phone (required), Password | Confirm password, PIN | Confirm PIN. Confirm password shows "Passwords don't match" on blur (and again when Password is blurred), via a field-level `onBlur` validator with `onBlurListenTo: ["password"]`. Confirm PIN does the same with "PINs don't match" and `onBlurListenTo: ["pin"]`. Password, confirm password, PIN and confirm PIN have an eye button (`TextField`'s `revealable` prop) that shows or hides the value. Validates with Zod on submit, then calls `registerAction` from `onSubmitAsync`. Server field errors (taken username or email) show under their field; other errors show above the submit button. The button is disabled while submitting. On success it shows a toast ("Welcome, {name}") and navigates on the client with `router.replace("/manage")`, so the toast survives |
-| `components/auth/pin-form.tsx` | PIN form (client): `PinInput` plus an Unlock button. Submits only from the button or Enter (no auto-submit when the boxes fill), calls `unlockAction` in a transition (boxes disabled, button says "Unlocking…"). A wrong or locked PIN clears the boxes, refocuses the first one and shows the server message under them. Any other failure (device no longer trusted) toasts and calls `router.refresh()` so `/unlock` shows the right screen |
-| `components/auth/pin-input.tsx` | `PinInput` (client): one shadcn `Input` per digit, masked with `-webkit-text-security` on `type="text"` + `inputMode="numeric"` (iOS ignores `inputMode` on password fields). Value stays contiguous (focusing past the first empty box jumps back), typing advances, Backspace goes back, arrows move, paste fills from the focused box. `autoFocus` focuses the first box on load and whenever the value is cleared |
-| `components/auth/entry-redirect.tsx` | `EntryRedirect`, used on `/`: calls `getEntryRoute()` and redirects signed-in phones to `/today` and trusted or pending devices to `/unlock`; renders nothing |
-| `components/auth/unlock-content.tsx` | `UnlockContent` and `UnlockSkeleton` (initials via `lib/initials.ts`). A valid session redirects to `/today`; then by `getDevice()`: `trusted` shows a centered card with the user's initials, "Hi, {name}", the store, `PinForm` and a "Forgot your PIN? Ask your manager" note; `pending` shows "Waiting for manager approval", `none` / `revoked` shows "Scan your store's QR code" with a link to `/register`. Never links or redirects to `/`, so a revoked device can't loop |
-| `components/auth/register-content.tsx` | `RegisterContent` and `RegisterSkeleton`. Calls `requireGuest()`, then renders the heading, `RegisterForm` and the sign-in link |
-| `components/layout/app-nav.tsx` | `AppNav`, the top bar for signed-in pages: ShelfWatch name (links to `/today`), `ModeToggle`, and `UserMenu` in `Suspense` (the shell stays static). Same width as the `(app)` main |
-| `components/layout/user-menu.tsx` | `UserMenu` (server) and `UserMenuSkeleton`. Reads `getSession()` without guarding (pages guard themselves); renders nothing without a session, otherwise `UserMenuDropdown` for everyone |
-| `components/layout/user-menu-dropdown.tsx` | `UserMenuDropdown` (client): a round initials button opening a shadcn dropdown with the name and store, page links from the `links` array (an entry with `managerOnly` is hidden from colleagues; currently only "Manage store" to `/manage`), then "Log out" (`logoutAction` in a transition, stays open showing "Logging out…", toasts on failure). Add new menu pages to `links`. Hiding a link is cosmetic: pages check roles themselves |
-| `components/today/today-content.tsx` | `TodayContent` (calls `requireSession()`, shows "Today", the store name and a "coming soon" card) and `TodaySkeleton` |
-| `components/manage/manage-welcome.tsx` | `ManageWelcome` (calls `requireManager()`, shows "Welcome, {name}" and the store) and `ManageWelcomeSkeleton` |
-| `components/manage/manager-login-content.tsx` | `ManagerLoginContent` (calls `requireManagerLogin()`, then a card with `ManagerLoginForm` and a "reset by email is coming soon" note) and `ManagerLoginSkeleton` |
-| `components/manage/manager-login-form.tsx` | Password form (client): one password field with an eye button, Confirm button ("Checking…" while pending; the input is `readOnly`, not disabled, so it keeps focus). Calls `managerLoginAction`; a wrong or locked password shows under the field, any other failure toasts and calls `router.refresh()` so the page guard redirects |
-| `components/theme-provider.tsx` | shadcn wrapper around the `next-themes` provider |
-| `components/mode-toggle.tsx` | One-click light/dark button with shadcn's animated Sun/Moon icons |
-| `components.json` | shadcn/ui config (style `base-nova`, Base UI primitives, CSS variables, lucide icons) |
-| `lib/initials.ts` | `initials(name)`: up to two uppercase initials. Safe on client and server |
-| `lib/utils.ts` | shadcn `cn()` class helper (re-exported from the `cn` package) |
-| `lib/validations/register.validation.ts` | Zod `usernameSchema` (trims and lowercases; reuse it for sign-in), `phoneSchema` (US only; normalizes to E.164 like `+12155551234`; reuse it wherever a phone is entered) and `registerSchema` for signup (checks `confirmPassword` matches `password` and `confirmPin` matches `pin`), the timezone list, and `PIN_LENGTH` |
-| `lib/action-result.ts` | `ActionResult<T>` shape every server action returns (`{ ok: true, data, message? }` or `{ ok: false, error: { code, message, fieldErrors? } }`), the `ok()` / `fail()` builders, and `toFormErrors()` for TanStack Form's `onSubmitAsync`. Safe on client and server |
-| `lib/errors.ts` | `AppError` (thrown by `lib/` business functions for expected errors) and `mapPrismaError()` (P2002 to `CONFLICT`, P2025 to `NOT_FOUND`, P2003 to `CONFLICT`). Server only |
-| `lib/safe-action.ts` | `createAction(schema, handler)` / `createAction(handler)`: validates input with Zod, runs the handler, turns errors into an `ActionResult`, and rethrows `redirect` / `notFound`. Server only, no `"use server"` |
-| `lib/passwords.ts` | `hashSecret()` / `verifySecret()` with bcryptjs (cost 12), for passwords and PINs. Server only |
-| `lib/register.ts` | `registerManager()` (auth-flow 4.1): hashes password and PIN, then in one `$transaction` creates the `Store` and its `MANAGER` user (`ACTIVE`, `approvedAt` set), an approved `Device` for this phone, and a `Session` with `managerUntil` = now + 15 min. After commit it sets `sw_device` and `sw_session`. Returns `{ name, storeName }`. Calls `assertGuest()` first, so a signed-in or trusted phone can't create a second store and overwrite `sw_device`. Server only |
-| `lib/tokens.ts` | `newToken()` (32 random bytes, base64url) and `hashToken()` (sha256 hex) for device, session and invite tokens. Server only |
-| `lib/auth-config.ts` | Cookie names (`sw_device`, `sw_session`) and lifetimes: device 90 days, session 10 hours, idle 30 min, `lastActiveAt` touch 1 min, manager access 15 min. Lockout for PIN and password: `MAX_FAILED_ATTEMPTS` (5) and `LOCK_STEPS_MS` (1, 5, 15 min). Server only |
-| `lib/session.ts` | `setAuthCookies()` (server actions / route handlers only), and `getSession()` / `requireSession()`, the per-request check from auth-flow section 3: loads the session by hashed cookie with user, store and device; deletes it if expired or idle; rejects revoked or unapproved devices and non-ACTIVE users; updates `lastActiveAt` and device `lastSeenAt` at most once a minute. `requireSession()` redirects to `/unlock`. `endSession()` deletes this phone's Session row and the `sw_session` cookie but keeps `sw_device` (server actions only). `getDevice()` reads `sw_device` and returns `none`, `revoked` (device revoked or user DISABLED), `pending` (not approved or user PENDING) or `trusted`, with the user's name and store name; read only, no `lastSeenAt` touch. `hasManagerAccess(auth)` (MANAGER and `managerUntil` in the future), `requireManager()` and `requireManagerLogin()` guard manager pages and `/manage/login`. `getEntryRoute()` decides where `/` goes (`/today`, `/unlock` or null). `requireGuest()` redirects to that route for guest-only pages; `assertGuest()` throws a FORBIDDEN `AppError` instead, for mutations. None of the read helpers set cookies, so they work in Server Components. Server only |
-| `actions/logout.action.ts` | `logoutAction`: `endSession()`, then `redirect("/unlock")` (rethrown by `createAction`) |
-| `actions/manager-login.action.ts` | `managerLoginAction`: `createAction(managerLoginSchema, …)` calls `confirmManagerPassword()` then `redirect("/manage")` |
-| `lib/manager-access.ts` | `confirmManagerPassword()` (auth-flow 4.5 and 5): needs a session and the MANAGER role; no-op if access is current; FORBIDDEN if the user has no password (4.11). Checks `passwordLockedUntil` first; a wrong password increments `failedPasswordAttempts` atomically and every 5th sets `passwordLockedUntil` (1, 5, 15 min). A correct one resets them and sets this session's `managerUntil` to now + 15 min in one transaction. No cookies change. Server only |
-| `lib/lockout.ts` | Shared brute-force helpers for PIN and password: `lockedMessage()` and `afterFailedAttempt()` (given the count after incrementing, returns the lock to save or the "N tries left" message). Server only |
-| `lib/validations/manager-login.validation.ts` | Zod `managerLoginSchema` (`password`, 1 to 72 characters) |
-| `actions/unlock.action.ts` | `unlockAction`: `createAction(unlockSchema, …)` calls `unlockWithPin()` then `redirect("/today")` |
-| `lib/unlock.ts` | `unlockWithPin()` (auth-flow 4.4 and 5): the `sw_device` cookie picks the user (no username typed). Refuses with FORBIDDEN if the device is missing, revoked or unapproved or the user isn't ACTIVE. Checks `lockedUntil` before the PIN. A wrong PIN increments `failedPinAttempts` atomically; every 5th sets `lockedUntil` (1, 5, then 15 min); otherwise says how many tries are left. A correct PIN resets the count and, in one transaction, deletes this device's old sessions, creates a new Session (no `managerUntil`) and touches `lastSeenAt`, then sets `sw_session` and renews `sw_device`. No-op with a valid session. Server only |
-| `lib/validations/unlock.validation.ts` | Zod `unlockSchema` (`pin`, exactly `PIN_LENGTH` digits) |
-| `actions/register.action.ts` | `registerAction`, the signup server action (`createAction(registerSchema, registerManager)`) |
-| `lib/db.ts` | The single shared Prisma client (`db`), using `@prisma/adapter-pg` |
-| `prisma/schema.prisma` | Prisma schema, owned by Ranok. Do not edit. `User.username` is unique across all stores. `User.phone` is required and unique (E.164). Models: `Store`, `User`, `StoreInvite`, `Device`, `Session`, `Product`, `StoreProduct`, `PullItem`, `PullEvent`; enums: `Role`, `UserStatus`, `PullStatus`, `PullAction` |
-| `prisma/migrations/` | Prisma migration history. `20261108050935_init` is the only migration (fresh init, replacing `20261108015102_init`) |
-| `prisma7.config.ts` | Prisma CLI config (schema path, migrations path, `DATABASE_URL` via dotenv) |
-| `.env` / `.env.example` | `DATABASE_URL`. `.env` is gitignored, `.env.example` is committed |
-| `README.md`, `CLAUDE.md`, `AGENTS.md` | Project docs |
-| `docs/auth-flow.md` | Ranok's auth design (PIN, password, devices, sessions, manager access, user flows). Read before touching auth. If code and the doc disagree, ask |
-| `.agents/`, `.claude/skills/`, `.windsurf/`, `skills-lock.json` | Prisma agent skills, written automatically by `prisma init` |
+Every page calls its own guard from `lib/auth/session.ts` in a `Suspense` child that wraps its content, never in a layout.
 
-## Decisions
+- Private pages (`/today`): `requireSession()`. No session goes to `/unlock`.
+- Manager pages (`/manage/*`): `requireManager()`. Colleagues go to `/today`; managers without recent password access go to `/manage/login`.
+- `/manage/login`: `requireManagerLogin()`. A manager who already has access goes to `/manage`.
+- Guest-only pages (`/register`, `/sign-in`, `/join/[token]`): `requireGuest()`. A session goes to `/today`, a trusted device to `/unlock`, a pending one to `/pending`.
+- Entry pages: `/` (`getEntryRoute()`), `/unlock` and `/pending`. They never send anyone to `/`, so a revoked device can't loop.
+- Mutations check too, since actions can be called without the page: guest-only ones call `assertGuest()`, private ones `getSession()` / `requireSession()`, manager ones `requireManager()`.
+- Hiding a link (like "Manage store" in the user menu) is cosmetic. The page guard is what protects it.
 
-- 2026-11-02: Single Next.js app (App Router, TS, Tailwind); no separate backend.
-- 2026-11-02: Prisma pinned to stable 7.10.1 (CLI and client). The npm `latest` tag for the `prisma` CLI pointed at 8.0.0-rc, which didn't match `@prisma/client`.
-- 2026-11-02: Prisma 7 needs a driver adapter, so `lib/db.ts` uses `@prisma/adapter-pg` + `pg`. The client is cached on `globalThis` in dev to survive hot reloads.
-- 2026-11-02: Generated client lives at `app/generated/prisma` (the `prisma init` default, left as-is). `postinstall` runs `prisma generate`.
-- 2026-11-02: Replaced the scaffold home page with a welcome message. Deleted the unused scaffold images in `public/` (`file.svg`, `globe.svg`, `next.svg`, `vercel.svg`, `window.svg`).
-- 2026-11-02: Added shadcn/ui via `npx shadcn@latest init --defaults` (style `base-nova`, built on `@base-ui/react`, not Radix). Components import `cn` straight from the `cn` npm package (published by the shadcn maintainer) rather than from `@/lib/utils`. Init also added `shadcn`, `tw-animate-css`, `class-variance-authority`, `lucide-react` and `cn` as dependencies and rewrote `app/globals.css` with its theme tokens.
-- 2026-11-02: Resized button and input for one-handed phone use (sizes above). Removed the input's `md:text-sm` so it stays 16px on every screen.
-- 2026-11-02: Fixed `--font-sans` in `app/globals.css`. Init had set it to `var(--font-sans)` (points at itself), so the Geist font didn't apply. It now points to `--font-geist-sans`.
-- 2026-11-02: Dark mode follows the system setting (`prefers-color-scheme`) for now, per Ranok. In `app/globals.css` the `dark` variant is a media query and shadcn's `.dark { ... }` tokens sit inside `@media (prefers-color-scheme: dark) { :root { ... } }`. Color values unchanged. When the theme toggle is added, switch back to a `.dark` class.
-- 2026-11-04: Wrote the Prisma schema from Ranok's spec, as a one-time exception to the no-schema-changes rule. The rule still stands. Only `prisma format` and `prisma validate` were run: no migration exists yet, the database is unchanged, and the generated client has not been rebuilt.
-- 2026-11-04: Fixed `prisma/schema.prisma` at Ranok's request after hand edits left it failing validation (duplicate `PullItem.user`). Removed the unnamed `User.pullItems` / `PullItem.user` / `PullItem.userId` relation. Added optional `PullItem.updatedById` / `updatedBy` as the missing side of `User.updatedPullItems` (`PullItemUpdatedBy`). Made `PullItem.product` required, since `upc` is required: an unknown UPC needs a bare `Product` row first. No migration has been run.
-- 2026-11-04: Removed `PullItem.updatedById` / `updatedBy` and `User.updatedPullItems` at Ranok's request. `PullEvent` is the record of who changed a pull item.
-- 2026-11-04: Ran the first migration (`20261105041728_init`) with `prisma migrate dev --name init`, as a one-time exception approved by Ranok. It created the local `shelfwatch` database and all tables, including Ranok's `StoreProduct` model. The "Don't run migrations" rule still stands.
-- 2026-11-05: Replaced the home page with the landing page, built only with Tailwind and shadcn (no CSS modules). The scan line on the hero barcode uses `tw-animate-css` utilities.
-- 2026-11-05: Added dark mode the shadcn way, at Ranok's request: `next-themes`, `ThemeProvider` in the root layout, default theme `system`. This replaces the system-only setup from 2026-11-02. In `app/globals.css` the `dark` variant is now `&:is(.dark *)` and the `prefers-color-scheme` block is gone, so dark colors come from the existing `.dark` tokens. `ModeToggle` is one click (no dropdown). `disableTransitionOnChange` is deliberately left off the provider because it would cancel the icon animation.
-- 2026-11-05: Recolored the landing page at Ranok's request because the first version was too colorful. All hardcoded colors are gone. Sections use neutral theme tokens with `primary` as the only accent, the tiles are shadcn `Card`s, and buttons use standard variants. Layout unchanged.
-- 2026-11-05: At Ranok's request, "How it works" uses the same `bg-background` as the hero. A shadcn `Separator` (added for this) now divides it from "Made for the store floor".
-- 2026-11-05: Added the signup form at Ranok's request, UI only, with no backend or submit logic. Uses `@tanstack/react-form` and `zod`, plus shadcn `field` and `select`. Validation schemas live in `lib/validations/`. The route is `/register` to match the landing page links. Field names follow the schema (`username`, `pin` for `pinHash`), except `storeName` for `Store.name` because `name` is the user's. `email` is optional, matching the schema. `password` is required here even though nullable in the schema, because the signup user is the manager. Assumed rules until Ranok confirms: 4-digit PIN, password 8 to 72 characters, username 3 to 30 characters, US timezones only.
-- 2026-11-05: At Ranok's request, the touch-size rule now matches the code. `button` and `input` stay at shadcn's stock sizes, as they have been since `de352a1`, replacing the 2026-11-02 resize. Larger touch sizes are set per use with `className`.
-- 2026-11-07: Added our own server action helpers (no library), at Ranok's request. Every action returns an `ActionResult` and is built with `createAction`. `lib/` functions throw `AppError` for expected errors; the wrapper converts those and known Prisma errors into failures, logs anything else, and sends the client only a generic `INTERNAL` message. It calls `unstable_rethrow` first so `redirect()` and `notFound()` still work. Added the `server-only` package. Unique-constraint field names are read from `meta.target` or, with the pg adapter, `meta.driverAdapterError.cause.constraint.fields`; confirm against a real P2002 when signup lands. Auth context (`UNAUTHENTICATED` / `FORBIDDEN`) is reserved and not built.
-- 2026-11-07: Signup mutation. At Ranok's request, as a one-time exception to the no-schema and no-migration rules (both still stand): `User.username` is now `@unique` across all stores, replacing `@@unique([storeId, username])`. The old `20261105041728_init` migration was deleted, the local DB reset (`prisma migrate reset`, with Ranok's consent), and a fresh `20261108015102_init` created. There was no data.
-- 2026-11-07: Passwords and PINs are hashed with `bcryptjs` (pure JS, cost 12). The form's 72-character password limit matches bcrypt's.
-- 2026-11-07: Server actions go in top-level `actions/`, not in `app/`, per Ranok.
-- 2026-11-07: After signup the form shows a temporary confirmation card. Once sessions exist it will redirect (home or the scan page) instead.
-- 2026-11-07: Confirmed the P2002 shape with `@prisma/adapter-pg`: Postgres reports the constraint by name, so the fields arrive only as `meta.driverAdapterError.cause.constraint.index` (e.g. `User_username_key`). `uniqueFields` in `lib/errors.ts` now parses Prisma's default `<Model>_<fields>_key` index name. Postgres reports one violation at a time, so a form whose username and email are both taken shows the username error first.
-- 2026-11-07: Usernames are lowercase, per Ranok. `usernameSchema` trims and lowercases before validating, and `registerManager` lowercases again before saving. Every stored username is lowercase, so the unique index on `User.username` rejects duplicates regardless of case. The form notes "Saved in lowercase." Sign-in must lowercase the same way (use `usernameSchema`).
-- 2026-11-07: Naming convention, per Ranok: `<feature>.validation.ts` for Zod schemas and `<feature>.action.ts` for server actions. Dots mark the role (like `*.test.ts` and `*.config.ts`), and kebab-case is used within names, matching Next.js and the rest of the repo. Renamed `lib/validations/register.ts` and `actions/register.ts` to match.
-- 2026-11-07: Added confirm password and eye buttons to the signup form, per Ranok. `registerSchema` is `registerFields.refine(...)`, with a `when` so the mismatch shows in the same submit as other errors. The server checks it too, since the action uses the same schema. `confirmPassword` isn't saved. Don't add `abort: true` to field checks in a refined schema: an aborted issue makes Zod skip the refine. `usernameSchema`'s regex uses `*`, so an empty value gets only the min-length error.
-- 2026-11-07: Per Ranok, Email shares a row with PIN on desktop instead of spanning the full width, so PIN no longer sits alone at half width. The password mismatch now shows on blur of Confirm password, not only on submit. The schema `refine` still runs on submit and on the server.
-- 2026-11-07: Email is required for manager signup, per Ranok, in `registerSchema` (so both the form and the server action enforce it; it's trimmed). `User.email` stays optional in the Prisma schema for other users, such as associates. This replaces the "`email` is optional" note from 2026-11-05.
-- 2026-11-07: Emails are lowercased before saving, per Ranok, like usernames: `registerSchema` trims and lowercases, and `registerManager` lowercases again. The unique index on `User.email` is therefore case-insensitive. Sign-in must lowercase the email the same way.
-- 2026-11-08: Auth/session schema, per Ranok's spec, as a one-time exception to the no-schema and no-migration rules (both still stand). `User` gains `phone` (required, unique), `failedPasswordAttempts` and `passwordLockedUntil`, and `lockedAt` is renamed `lockedUntil`. `Device.userId` is now required, and `Device` gains `approvedAt` and `@@index([userId])`. A new `Session` model has its id set to the sha256 of the cookie token, and it cascades when its user or device is deleted. `PullEvent` gains `@@index([pullItemId])`. `20261108015102_init` was deleted, the local DB reset (`prisma migrate reset`, with Ranok's consent; no data kept), and a fresh `20261108050935_init` created. The client was regenerated.
-- 2026-11-08: Phone is stored as E.164. Signup accepts US numbers only for now, matching the US timezone list, and `phoneSchema` normalizes common formats with no extra library. A taken phone shows "This phone is already taken" under the field, through the existing P2002 mapping (`User_phone_key`).
-- 2026-11-08: Signup has a Confirm PIN field, per Ranok. It works like Confirm password: a second `refine` with its own `when`, plus an on-blur check. `confirmPin` isn't saved.
-- 2026-11-08: Auth is in scope, per Ranok, following `docs/auth-flow.md`. The scope rule in CLAUDE.md and AGENTS.md now says so; notifications and analytics are still out.
-- 2026-11-08: Signup (auth-flow 4.1) now trusts the manager's phone and starts a session in the same transaction as the store. Tokens are 32 random bytes (base64url) in httpOnly, SameSite=Lax cookies; only their sha256 is stored. `secure` is set only in production so phones can test over LAN http. The first session gets 15 minutes of manager access because the manager just typed the password. Added shadcn `sonner` for toasts (`Toaster` in the root layout). The temporary success card is gone: the form toasts and navigates to `/manage` on the client, so the toast isn't lost (a `redirect()` in the action would drop the result). The manager check (`requireManager`, auth-flow 4.5) isn't built yet.
-- 2026-11-08: `/` routes by auth state with redirects to separate pages, per Ranok, not conditional rendering: valid session to `/today`, trusted or pending device to `/unlock`, no or revoked device stays on the landing page. The checks run in pages (inside `Suspense`, required by `cacheComponents`), not layouts; a redirect inside a streamed boundary arrives as a client-side meta refresh. `/unlock` never redirects or links to `/`. The device and entry helpers live in `lib/session.ts` (auth-flow calls it `lib/auth.ts`). The PIN form is UI only until the PIN check is built. There is no PWA manifest yet; when one is added, set `start_url` to `/today`.
-- 2026-11-08: Page protection, per Ranok. There are three kinds of page: private (`requireSession()`), guest-only (`requireGuest()`) and entry (`/`, `/unlock`). Each page guards its own content inside `Suspense`, and guest-only mutations call `assertGuest()` because actions can be called without the page. A phone with a trusted or pending device but no session counts as not a guest, so `/register` sends it to `/unlock`, the same rule `/` uses. No `proxy.ts` for now: the page checks are what keep content safe, and a cookie-only proxy would just skip the brief skeleton before a redirect.
-- 2026-11-08: Per Ranok, pages stay thin. Their sections moved to `components/auth/`, `components/today/`, `components/manage/` and `components/layout/`. The large landing page (`app/page.tsx`) and `app/not-found.tsx` still keep their sections inline; they haven't been split yet.
-- 2026-11-08: `/today` has its own layout with `AppNav`, a little wider on desktop (`lg:max-w-3xl`). Log out ends only the session: the Session row and `sw_session` are deleted, `sw_device` stays, and the user lands on `/unlock` and only needs their PIN next time. Forgetting the device would make them re-join and wait for approval. Until the PIN check exists, logging out can't be undone except by registering again.
-- 2026-11-08: PIN unlock (auth-flow 4.4), per Ranok. `/unlock` has four separate PIN boxes (our own `PinInput`, no new dependency or shadcn component) and submits only when the user taps Unlock or presses Enter, never automatically when the boxes fill (per Ranok). The lockout escalation uses only existing columns: `failedPinAttempts` keeps counting across locks and resets only on a correct PIN, so `failedPinAttempts / 5` gives the step (1, 5, 15 min) and the user gets 5 more tries after each lock. A PIN session has no manager access; that still needs the password (`requireManager` isn't built). Unlock replaces any old session on the same device, so a phone has at most one. Everyone lands on `/today` after unlocking. iOS Safari doesn't open the keyboard from a programmatic focus without a tap, so the first box is focused but the keyboard may need a tap there.
-- 2026-11-08: Manager access (auth-flow 4.5), per Ranok. `/manage` needs the MANAGER role plus a password confirmed in the last 15 minutes (`managerUntil` on the session); otherwise it sends managers to `/manage/login` and colleagues to `/today`. `/manage/login` redirects to `/manage` when access is still current. The password check reuses the PIN lockout rules through `lib/lockout.ts`; the PIN constants were renamed `MAX_FAILED_ATTEMPTS` / `LOCK_STEPS_MS`. After the password it always returns to `/manage` (no `?next=` until there are more manager pages).
-- 2026-11-08: Every signed-in user gets the same account dropdown (round initials button), per Ranok, so features for colleagues can be added there later. "Log out" is for everyone and "Manage store" only for managers. Added shadcn `dropdown-menu`. `LogoutButton` was removed; logout lives in the menu. `/today` and `/manage` share `app/(app)/layout.tsx` (replacing the today-only layout), so `/manage` lost its own header.
+## Gotchas
+
+### Next.js
+
+- With `cacheComponents`, anything that reads cookies, the time, or `usePathname` must sit inside `Suspense`. A function that reads the time without cookies may need `await connection()` first (see `getJoinStore()`), or a cookie-less prerender runs it at build time.
+- A `redirect()` inside a streamed `Suspense` boundary arrives as a client-side meta refresh.
+- A `redirect()` in a server action drops the action's result. When the client should toast on success, return the result and navigate on the client with `router.replace()`.
+- `createAction` calls `unstable_rethrow` first so `redirect()` and `notFound()` still work inside actions. Keep it that way.
+- Route params are passed down unawaited and awaited inside the `Suspense` boundary.
+- LAN testing needs `allowedDevOrigins: ["192.168.*.*"]` in `next.config.ts`. Without it the page never hydrates and forms fall back to a native GET. Restart `next dev` after changing it.
+
+### Prisma
+
+- `lib/db.ts` caches the client on `globalThis` in dev. Restart the dev server after a schema change.
+- With the pg adapter, a P2002 reports only the index name (`meta.driverAdapterError.cause.constraint.index`, like `User_username_key`). `lib/core/errors.ts` parses it into a field. Postgres reports one violation at a time.
+- `prisma migrate dev` refuses to run non-interactively. When a migration is approved, generate the SQL with `prisma migrate diff` and apply it with `prisma migrate deploy`.
+- The npm `latest` tag for the `prisma` CLI may point at an 8.x release candidate. Keep CLI and client both on 7.10.1.
+
+### Zod and forms
+
+- Don't add `abort: true` to field checks in a refined schema (like `registerSchema`): an aborted issue makes Zod skip the `refine`.
+- Mismatch checks (Confirm password, Confirm PIN) use a `refine` with `when`, plus a field `onBlur` validator with `onBlurListenTo`.
+
+### Auth
+
+- Only sha256 hashes of device and session tokens are stored; `Session.id` is the hash, so never send session ids to the client. Join link tokens are the exception: stored plain, since they're printed on the wall.
+- Auth cookies set `secure` only in production, so phones can test over LAN http.
+- The read helpers in `lib/auth/session.ts` never set cookies, so they work in Server Components. `setAuthCookies()`, `setDeviceCookie()` and `endSession()` work only in server actions and route handlers.
+- Expired or idle sessions are deleted only on their next request. Anything that lists sessions must filter by the same rules as `getSession()`.
+- PIN lockout: `failedPinAttempts` keeps counting across locks and resets only on a correct PIN; `failedPinAttempts / 5` picks the step (1, 5, 15 min).
+- Password lockout is split: `/sign-in` uses the User fields; `/manage/login` counts on the Session, and the 5th miss ends the session. Don't touch the User lock fields from `/manage/login`.
+- Auth-flow calls the session module `lib/auth.ts`; it's `lib/auth/session.ts`.
+
+### Phones and browsers
+
+- iOS ignores `inputMode` on password fields, so `PinInput` uses `type="text"` with `-webkit-text-security`.
+- iOS Safari doesn't open the keyboard on a programmatic focus without a tap.
+- To keep focus during a pending submit, make the input `readOnly`, not `disabled`.
+- The Clipboard API isn't available on LAN http; fall back to `execCommand("copy")`.
+
+### UI
+
+- Dark mode uses the `.dark` class (`&:is(.dark *)`). Leave `disableTransitionOnChange` off the `ThemeProvider`; it cancels the mode toggle's icon animation.
+- Row links use a stretched link (`ROW_CLASS` / `ROW_LINK_CLASS` in `components/manage/member-row.tsx`). Any button inside the row needs `relative z-10`.
+- `app/(app)/layout.tsx` doesn't render `main`. Pages and nested layouts wrap content in `AppMain`, and any bar that must line up with the logo uses `APP_CONTAINER`.
+- Printing: hide non-printable chrome with `print:hidden`, and use `print:text-black` so dark mode doesn't print light text.

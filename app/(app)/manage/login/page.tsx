@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+import { AppMain } from "@/components/layout/app-main";
 import {
   ManagerLoginContent,
   ManagerLoginSkeleton,
@@ -14,8 +15,10 @@ export const metadata: Metadata = {
 export default function ManagerLoginPage() {
   return (
     // Guarded by `requireManagerLogin()`; reads cookies, so it sits behind Suspense (cacheComponents).
-    <Suspense fallback={<ManagerLoginSkeleton />}>
-      <ManagerLoginContent />
-    </Suspense>
+    <AppMain>
+      <Suspense fallback={<ManagerLoginSkeleton />}>
+        <ManagerLoginContent />
+      </Suspense>
+    </AppMain>
   );
 }

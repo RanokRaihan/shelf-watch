@@ -44,6 +44,8 @@ export function PinForm() {
 
   return (
     <form
+      // POST, so a submit before hydration never puts secrets in the URL.
+      method="post"
       className="flex flex-col gap-6"
       onSubmit={(event) => {
         event.preventDefault();

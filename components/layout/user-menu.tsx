@@ -1,5 +1,5 @@
 import { UserMenuDropdown } from "@/components/layout/user-menu-dropdown";
-import { getSession } from "@/lib/session";
+import { getSession } from "@/lib/auth/session";
 
 // The account menu in `AppNav`. Reads the session but doesn't guard: each page
 // does its own `requireSession()`. Renders nothing without a session. Render

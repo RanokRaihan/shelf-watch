@@ -1,7 +1,7 @@
 import "server-only";
 
-import { LOCK_STEPS_MS, MAX_FAILED_ATTEMPTS } from "@/lib/auth-config";
-import type { ErrorCode } from "@/lib/action-result";
+import { LOCK_STEPS_MS, MAX_FAILED_ATTEMPTS } from "@/lib/auth/auth-config";
+import type { ErrorCode } from "@/lib/core/action-result";
 
 // Brute force protection shared by PIN and password (docs/auth-flow.md 5).
 // The failed count keeps going through each lock and resets only on success,

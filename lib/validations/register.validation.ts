@@ -45,6 +45,18 @@ export const phoneSchema = z
   })
   .pipe(z.string().regex(US_E164, "Enter a valid US phone number"));
 
+// A person's display name. Shared with the join form.
+export const nameSchema = z
+  .string()
+  .trim()
+  .min(1, "Enter your name")
+  .max(100, "Name must be 100 characters or fewer");
+
+// Everyday PIN (docs/auth-flow.md 1). Shared with the join form.
+export const pinSchema = z
+  .string()
+  .regex(new RegExp(`^\\d{${PIN_LENGTH}}$`), `PIN must be ${PIN_LENGTH} digits`);
+
 const registerFields = z.object({
   // Store
   storeName: z
@@ -62,11 +74,7 @@ const registerFields = z.object({
   ),
 
   // User
-  name: z
-    .string()
-    .trim()
-    .min(1, "Enter your name")
-    .max(100, "Name must be 100 characters or fewer"),
+  name: nameSchema,
   username: usernameSchema,
   // Optional in the schema (associates), but required for the manager.
   // Lowercased so the unique index on `User.email` is case-insensitive.
@@ -82,9 +90,7 @@ const registerFields = z.object({
     .min(8, "Password must be at least 8 characters")
     .max(72, "Password must be 72 characters or fewer"),
   confirmPassword: z.string().min(1, "Confirm your password"),
-  pin: z
-    .string()
-    .regex(new RegExp(`^\\d{${PIN_LENGTH}}$`), `PIN must be ${PIN_LENGTH} digits`),
+  pin: pinSchema,
   confirmPin: z.string().min(1, "Confirm your PIN"),
 });
 
