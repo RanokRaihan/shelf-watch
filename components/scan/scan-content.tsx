@@ -1,16 +1,10 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
+import { BarcodeScanner } from "@/components/scan/barcode-scanner";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { requireSession } from "@/lib/auth/session";
 
-// Placeholder until the scanner is built.
 export async function ScanContent() {
   await requireSession();
 
@@ -22,14 +16,7 @@ export async function ScanContent() {
           Scan a product barcode to set its pull date.
         </p>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Scanner coming soon</CardTitle>
-          <CardDescription className="text-base">
-            This is where the camera will open.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <BarcodeScanner />
       <Link
         href="/today"
         className={buttonVariants({
@@ -46,9 +33,12 @@ export async function ScanContent() {
 
 export function ScanSkeleton() {
   return (
-    <div className="flex flex-col gap-2" aria-hidden="true">
-      <div className="h-9 w-24 animate-pulse rounded-md bg-muted" />
-      <div className="h-6 w-64 animate-pulse rounded-md bg-muted" />
+    <div className="flex flex-col gap-6" aria-hidden="true">
+      <div className="flex flex-col gap-2">
+        <div className="h-9 w-24 animate-pulse rounded-md bg-muted" />
+        <div className="h-6 w-64 animate-pulse rounded-md bg-muted" />
+      </div>
+      <div className="aspect-4/3 w-full animate-pulse rounded-xl bg-muted" />
     </div>
   );
 }

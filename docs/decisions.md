@@ -62,6 +62,13 @@ Current architecture decisions and why they were made. When a decision changes, 
 - 2026-11-09: No actions on yourself or on other managers until roles are designed. Approve also approves the user's waiting devices. Reject deletes the pending user, their sessions and devices (they own nothing else), which frees the username and phone to join again. Remove follows auth-flow 4.9: DISABLED, sessions deleted, devices revoked, in one transaction.
 - 2026-11-09: The detail page's active sessions list filters by the same rules as `getSession()`, because expired or idle rows are only deleted on their next request. Session ids never reach the page. A manager can sign out a session or revoke a phone for anyone in the store except their own current phone. A session is named by its device id, since a phone has at most one session (unlock replaces it). Sign out deletes the session and keeps the phone trusted; Revoke sets `revokedAt` and deletes its sessions in one transaction (4.10). Both need the member to be ACTIVE.
 
+## Scanner
+
+- 2026-11-12: Barcodes are read with `barcode-detector`: the native `BarcodeDetector` when it supports our formats (Chrome on Android), otherwise its ZXing WASM ponyfill, loaded only when `/scan` opens. The `.wasm` is self-hosted (copied to `public/` on `postinstall`) instead of the default jsDelivr CDN, so it always matches the installed version.
+- 2026-11-12: Only retail formats (EAN-13, EAN-8, UPC-A, UPC-E). Each frame is cropped to the aiming box (plus a small margin) before detection, so only a barcode the user lines up counts. The camera stops on a hit and whenever the tab is hidden.
+- 2026-11-12: The success beep is a Web Audio tone, no audio file; vibration where supported. The camera frame and scrim are fixed black, like the QR exception.
+- 2026-11-12: A denied camera can't be re-prompted by the page. The denied panel explains how to allow it in site settings, Try again re-requests it, and where the Permissions API reports changes (Chrome) it restarts on its own.
+
 ## Data model
 
 - 2026-11-04: `PullEvent` is the record of who changed a pull item; `PullItem` has no `updatedBy`. `PullItem.product` is required, so an unknown UPC needs a bare `Product` row first.

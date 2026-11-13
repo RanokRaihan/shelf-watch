@@ -21,8 +21,8 @@ Barcode-scan tool for retail teams to track product pull dates. This file holds 
 
 ## Commands
 
-- `npm run dev` (dev server), `npm run build`, `npm run lint`. There's no test script.
-- `npm install` runs `prisma generate` (`postinstall`). The Prisma CLI config is `prisma7.config.ts` (schema and migrations paths, `DATABASE_URL` via dotenv).
+- `npm run dev` (dev server), `npm run dev:https` (self-signed HTTPS, for the camera on LAN phones), `npm run build`, `npm run lint`. There's no test script.
+- `npm install` runs `prisma generate` and copies the scanner's `zxing_reader.wasm` into `public/` (`postinstall`, gitignored). The Prisma CLI config is `prisma7.config.ts` (schema and migrations paths, `DATABASE_URL` via dotenv).
 - Don't run migrations. Ranok runs them, or approves a one-time exception.
 
 ## Stack
@@ -61,7 +61,7 @@ Barcode-scan tool for retail teams to track product pull dates. This file holds 
 - Server actions and route handlers only call `lib/` functions. No Prisma calls in components or actions.
 - File names: kebab-case base name plus a dot role suffix (`store-invite.action.ts`). Don't use `_` (a leading `_` marks a private folder in `app/`).
 - Keep `page.tsx` and `layout.tsx` thin: metadata, the page shell, `Suspense` boundaries, and composing components. A section's skeleton is exported from the same file as the section.
-- Use shadcn components and theme tokens (`bg-background`, `bg-muted`, `bg-primary`, `text-muted-foreground`, …). No hardcoded colors, and `primary` is the only accent. Exception: the QR code and its printed text are fixed black on white so they stay scannable.
+- Use shadcn components and theme tokens (`bg-background`, `bg-muted`, `bg-primary`, `text-muted-foreground`, …). No hardcoded colors, and `primary` is the only accent. Exception: the QR code and its printed text are fixed black on white so they stay scannable, and the camera frame, scrim and spinner over live video are fixed black/white.
 - `components/ui/` has only `button`, `input`, `label`, `card`, `separator`, `field`, `select`, `sonner`, `dropdown-menu`, `alert-dialog`. Add more only when asked.
 - `button` and `input` keep shadcn's stock sizes (button `h-8`, `sm` `h-7`, `lg` `h-9`; input `h-8`). Set phone-first touch sizes where they're used with `className` (`h-12 text-base`).
 - Don't change theme colors or radius in `app/globals.css`; Ranok sets those.
@@ -121,6 +121,7 @@ Every page calls its own guard from `lib/auth/session.ts` in a `Suspense` child 
 - iOS Safari doesn't open the keyboard on a programmatic focus without a tap.
 - To keep focus during a pending submit, make the input `readOnly`, not `disabled`.
 - The Clipboard API isn't available on LAN http; fall back to `execCommand("copy")`.
+- The camera (`getUserMedia`) needs HTTPS or localhost. Test `/scan` on phones with `npm run dev:https` (accept the cert warning once).
 
 ### UI
 
