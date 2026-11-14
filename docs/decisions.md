@@ -66,6 +66,7 @@ Current architecture decisions and why they were made. When a decision changes, 
 
 - 2026-11-12: Barcodes are read with `barcode-detector`: the native `BarcodeDetector` when it supports our formats (Chrome on Android), otherwise its ZXing WASM ponyfill, loaded only when `/scan` opens. The `.wasm` is self-hosted (copied to `public/` on `postinstall`) instead of the default jsDelivr CDN, so it always matches the installed version.
 - 2026-11-12: Only retail formats (EAN-13, EAN-8, UPC-A, UPC-E). Each frame is cropped to the aiming box (plus a small margin) before detection, so only a barcode the user lines up counts. The camera stops on a hit and whenever the tab is hidden.
+- 2026-11-12: A code is accepted only after 3 identical reads, each within 500 ms of the last (frames every 100 ms). A partly covered barcode passes the single check digit about 1 time in 10 and gives a different wrong number each frame, so one read isn't enough. Checkout scanners do the same.
 - 2026-11-12: The success beep is a Web Audio tone, no audio file; vibration where supported. The camera frame and scrim are fixed black, like the QR exception.
 - 2026-11-12: A denied camera can't be re-prompted by the page. The denied panel explains how to allow it in site settings, Try again re-requests it, and where the Permissions API reports changes (Chrome) it restarts on its own.
 

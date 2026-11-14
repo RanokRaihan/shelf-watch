@@ -26,7 +26,10 @@ const CONSTRAINTS: MediaStreamConstraints = {
   audio: false,
 };
 
-const SCAN_INTERVAL_MS = 150;
+const SCAN_INTERVAL_MS = 100;
+// A cut-off barcode can pass the single check digit by chance, but never the same way 3 times in a row.
+const REQUIRED_READS = 3;
+const STREAK_TIMEOUT_MS = 500;
 const MAX_CROP_WIDTH = 1280;
 // Extra room around the aiming box so a barcode a little outside it still reads.
 const CROP_MARGIN = 0.1;
@@ -104,6 +107,7 @@ export function BarcodeScanner() {
     let frame = 0;
     let busy = false;
     let lastScan = 0;
+    let streak = { code: "", count: 0, lastSeen: 0 };
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
@@ -161,6 +165,9 @@ export function BarcodeScanner() {
           .then((results) => {
             const code = results[0]?.rawValue;
             if (!code || cancelled) return;
+            const continues = code === streak.code && now - streak.lastSeen <= STREAK_TIMEOUT_MS;
+            streak = { code, count: continues ? streak.count + 1 : 1, lastSeen: now };
+            if (streak.count < REQUIRED_READS) return;
             cancelled = true;
             stop();
             void playBeep();
