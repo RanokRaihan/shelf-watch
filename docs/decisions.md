@@ -72,7 +72,8 @@ Current architecture decisions and why they were made. When a decision changes, 
 
 ## Data model
 
-- 2026-11-04: `PullEvent` is the record of who changed a pull item; `PullItem` has no `updatedBy`. `PullItem.product` is required, so an unknown UPC needs a bare `Product` row first.
+- 2026-11-04: `PullEvent` is the record of who changed a pull item; `PullItem` has no `updatedBy`. `PullItem.product` is required, so an unknown code still gets a `Product` row (`lookupStatus: NOT_FOUND`).
+- 2026-11-13: Products are keyed by `gtin` (14 digits, zero-padded), so the UPC-A, EAN-13 and expanded UPC-E of one item share a row and one API lookup. `barcodeFormat` + `barcodeValue` keep the exact scanned barcode for reprinting. `Product` is shared by all stores and holds only lookup data; a store's own name, SKU, location and `leadDays` (overrides `Store.defaultLeadDays`) live on `StoreProduct`. `FOUND` is never re-fetched, `NOT_FOUND` is retried after a while, `FAILED` on the next scan.
 - 2026-11-07: `User.username` is unique across all stores.
 
 ## Not built yet
