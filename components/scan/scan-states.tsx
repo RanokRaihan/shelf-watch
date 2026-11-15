@@ -1,4 +1,4 @@
-import { CameraOff, RotateCcw, ScanBarcode } from "lucide-react";
+import { CameraOff, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -65,28 +65,6 @@ export function CameraProblem({
         <Button onClick={onRetry} className="h-12 w-full gap-2 text-base">
           <RotateCcw aria-hidden="true" />
           Try again
-        </Button>
-      </CardFooter>
-    </Card>
-  );
-}
-
-export function ScanResult({ code, onScanAgain }: { code: string; onScanAgain: () => void }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardDescription className="text-base">Scanned barcode</CardDescription>
-        <CardTitle
-          className="font-mono text-4xl tracking-wider break-all"
-          aria-live="polite"
-        >
-          {code}
-        </CardTitle>
-      </CardHeader>
-      <CardFooter>
-        <Button onClick={onScanAgain} className="h-12 w-full gap-2 text-base">
-          <ScanBarcode aria-hidden="true" />
-          Scan again
         </Button>
       </CardFooter>
     </Card>

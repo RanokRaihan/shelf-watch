@@ -14,6 +14,7 @@ Barcode-scan tool for retail teams to track product pull dates. This file holds 
 
 ## Keeping this file lean
 
+- After finishing a task, list every changed file grouped by review priority. High, Medium and Skip.
 - Update this file only when a command, rule, the folder layout, or a gotcha changes. Don't list files or describe what a component renders; that's what the code is for.
 - Record architecture decisions in `docs/decisions.md`. When one changes, edit or replace its entry instead of appending, so it only says what's true now.
 - Aim to keep this file around 150 lines. If a section grows, move the detail to `docs/` and link it.
@@ -48,11 +49,11 @@ Barcode-scan tool for retail teams to track product pull dates. This file holds 
 
 - `app/`: routes only. `(auth)/` holds guest and entry pages (`/register`, `/sign-in`, `/join/[token]`, `/unlock`, `/pending`); `(app)/` holds signed-in pages (`/today`, `/scan`, `/manage/*`). Manager pages with the tab bar are in `(app)/manage/(tabs)/`; `/manage/login` sits outside it.
 - `actions/`: server actions, one `"use server"` file per feature, named `<feature>.action.ts`. Never inside `app/`.
-- `components/<feature>/` (`auth/`, `today/`, `scan/`, `manage/`): page sections, guards and skeletons. `components/layout/`: shared app chrome. `components/ui/`: shadcn components.
+- `components/<feature>/` (`auth/`, `today/`, `scan/`, `manage/`): page sections, guards and skeletons. `components/layout/`: shared app chrome. `components/form/`: form fields shared across features. `components/ui/`: shadcn components.
 - `lib/`: all database and business logic, as plain functions.
   - `db.ts` (the single Prisma client; don't create another) and `utils.ts` (shadcn `cn`) stay at the root.
   - `core/`: action plumbing and app-wide server helpers (`action-result`, `safe-action`, `errors`, `app-url`).
-  - `auth/`: auth, sessions, devices and secrets. `store/`: store management (members, invites, QR). `format/`: pure display helpers, safe on client and server. `validations/`: Zod schemas, named `<feature>.validation.ts`.
+  - `auth/`: auth, sessions, devices and secrets. `store/`: store management (members, invites, QR). `format/`: pure display helpers, safe on client and server. `barcode/`: GTIN parsing (pure). `products/`: products and third-party lookup providers. `pulls/`: pull items and date math (`pull-dates.ts` is pure). `validations/`: Zod schemas, named `<feature>.validation.ts`.
   - A new feature gets its own folder (for example `lib/pulls/pull-items.ts`).
   - Import with the full path (`@/lib/auth/session`). No barrel `index.ts` files.
 
@@ -62,7 +63,7 @@ Barcode-scan tool for retail teams to track product pull dates. This file holds 
 - File names: kebab-case base name plus a dot role suffix (`store-invite.action.ts`). Don't use `_` (a leading `_` marks a private folder in `app/`).
 - Keep `page.tsx` and `layout.tsx` thin: metadata, the page shell, `Suspense` boundaries, and composing components. A section's skeleton is exported from the same file as the section.
 - Use shadcn components and theme tokens (`bg-background`, `bg-muted`, `bg-primary`, `text-muted-foreground`, …). No hardcoded colors, and `primary` is the only accent. Exception: the QR code and its printed text are fixed black on white so they stay scannable, and the camera frame, scrim and spinner over live video are fixed black/white.
-- `components/ui/` has only `button`, `input`, `label`, `card`, `separator`, `field`, `select`, `sonner`, `dropdown-menu`, `alert-dialog`. Add more only when asked.
+- `components/ui/` has only `button`, `input`, `label`, `card`, `separator`, `field`, `select`, `sonner`, `dropdown-menu`, `alert-dialog`, `popover`, `calendar`, `collapsible`, `toggle`, `toggle-group`. Add more only when asked.
 - `button` and `input` keep shadcn's stock sizes (button `h-8`, `sm` `h-7`, `lg` `h-9`; input `h-8`). Set phone-first touch sizes where they're used with `className` (`h-12 text-base`).
 - Don't change theme colors or radius in `app/globals.css`; Ranok sets those.
 - Comments: only when the code isn't clear on its own, one short line. No multi-line or block comments.

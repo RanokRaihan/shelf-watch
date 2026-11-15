@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
-// Shared TanStack Form text field for the auth forms (register, join):
+// Shared TanStack Form text field (auth and scan forms):
 // label, 48px input, optional eye button, description and errors.
 
 export const CONTROL_SIZE = "h-12 px-3 text-base md:text-base";
@@ -23,6 +23,10 @@ export function toFieldErrors(errors: unknown[]) {
   return errors.map((error) =>
     typeof error === "string" ? { message: error } : (error as { message?: string }),
   );
+}
+
+export function RequiredMark() {
+  return <span aria-hidden="true">*</span>;
 }
 
 export type TextFieldProps = ComponentProps<"input"> & {
@@ -40,6 +44,7 @@ export function TextField({
   description,
   fieldClassName,
   revealable = false,
+  required,
   type,
   ...props
 }: TextFieldProps) {
@@ -54,6 +59,7 @@ export function TextField({
       onBlur={field.handleBlur}
       onChange={(event) => field.handleChange(event.target.value)}
       aria-invalid={isInvalid}
+      aria-required={required}
       className={cn(CONTROL_SIZE, revealable && "pr-12")}
       type={revealable && isRevealed ? "text" : type}
       {...props}
@@ -62,7 +68,10 @@ export function TextField({
 
   return (
     <Field data-invalid={isInvalid} className={fieldClassName}>
-      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+      <FieldLabel htmlFor={field.name}>
+        {label}
+        {required && <RequiredMark />}
+      </FieldLabel>
       {revealable ? (
         <div className="relative">
           {input}

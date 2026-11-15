@@ -12,6 +12,7 @@ Current architecture decisions and why they were made. When a decision changes, 
 - 2026-11-07: Passwords and PINs are hashed with `bcryptjs` (pure JS, cost 12). The 72-character password limit matches bcrypt's.
 - 2026-11-08: QR codes come from `qrcode`, which renders an SVG string on the server, so no client JS. Error correction M, margin 4.
 - 2026-11-08: Toasts use shadcn `sonner` (`Toaster` in the root layout).
+- 2026-11-13: The date picker is the shadcn base Calendar + Popover, added with the shadcn CLI, which brought `react-day-picker` and `date-fns`. `date-fns` also does the pull-date math. Today in the store's timezone comes from `Intl.DateTimeFormat`, no extra timezone package.
 
 ## UI and theme
 
@@ -65,15 +66,26 @@ Current architecture decisions and why they were made. When a decision changes, 
 ## Scanner
 
 - 2026-11-12: Barcodes are read with `barcode-detector`: the native `BarcodeDetector` when it supports our formats (Chrome on Android), otherwise its ZXing WASM ponyfill, loaded only when `/scan` opens. The `.wasm` is self-hosted (copied to `public/` on `postinstall`) instead of the default jsDelivr CDN, so it always matches the installed version.
-- 2026-11-12: Only retail formats (EAN-13, EAN-8, UPC-A, UPC-E). Each frame is cropped to the aiming box (plus a small margin) before detection, so only a barcode the user lines up counts. The camera stops on a hit and whenever the tab is hidden.
+- 2026-11-12: Only retail formats (EAN-13, EAN-8, UPC-A, UPC-E). Each frame is cropped to the aiming box (plus a small margin) before detection, so only a barcode the user lines up counts.
 - 2026-11-12: A code is accepted only after 3 identical reads, each within 500 ms of the last (frames every 100 ms). A partly covered barcode passes the single check digit about 1 time in 10 and gives a different wrong number each frame, so one read isn't enough. Checkout scanners do the same.
 - 2026-11-12: The success beep is a Web Audio tone, no audio file; vibration where supported. The camera frame and scrim are fixed black, like the QR exception.
+- 2026-11-13: The camera stream and barcode detection are separate (`use-camera-stream`, `use-barcode-detection`). Detection runs only on the scanning step. The stream stays on through the scan, form, scan loop (the video stays mounted, hidden) so the next scan is instant. It stops when the tab is hidden, after 60 s with no activity on another screen, and when the user leaves `/scan`; it restarts on the scanning step.
 - 2026-11-12: A denied camera can't be re-prompted by the page. The denied panel explains how to allow it in site settings, Try again re-requests it, and where the Permissions API reports changes (Chrome) it restarts on its own.
+
+## Scan flow
+
+- 2026-11-13: One page at `/scan`; a reducer (`scan-flow-reducer.ts`) holds the step and swaps the whole screen (no drawer: date pickers and the phone keyboard get cramped in one). Refresh starts over at the scanner; nothing is persisted.
+- 2026-11-13: Each step change pushes a history entry (`?step=…`, with `scanDepth` in `history.state`, which Next keeps). Back pops one step; Cancel and Rescan go back to depth 0 with `history.go()` so history doesn't grow. The looking-up step and a saved product form are replaced, not pushed, so back never reopens them.
+- 2026-11-13: Lookup order: our `Product` by GTIN first (no API call when found; the `StoreProduct` is created then), then the providers in `lib/products/lookup/` (Open Food Facts for now) with one 5 s timeout. Nothing is saved until the product form. Provider text is clipped to our limits and images are allowed only from `PRODUCT_IMAGE_HOSTS` (shared with `next.config.ts`).
+- 2026-11-13: The flow only creates products. Saving upserts with an empty update, so if another user saved the same GTIN first their row stays and we continue with it. `lookupStatus` records how it was made: FOUND (+ `source`) from an API match, NOT_FOUND when the APIs had nothing, FAILED when entered after an error. `sourceData` stays null.
+- 2026-11-13: Dates are plain `YYYY-MM-DD` strings end to end and stored as `@db.Date` (UTC midnight). Today is the store's today. The same Zod schema (`pullItemFieldsSchema(today)`) runs in the form and again in `createPullItem`, which builds it with the store's today from the session. An exact pending duplicate (same product, expiry and pull date) is refused. Saving writes the location back to `StoreProduct` and a `PullEvent` CREATED.
+- 2026-11-13: Offsets are 1 week, 2 weeks, 1 month, 2 months (calendar months, so Mar 31 minus 1 month is Feb 28). The preselected offset comes from `StoreProduct.leadDays ?? Store.defaultLeadDays`: 7, 14, 30/31 and 60/61 match; anything else preselects nothing. An offset that lands before today sets today and says so.
+- 2026-11-13: Typed barcode numbers have no format: 12 digits is UPC-A, 13 EAN-13, 8 UPC-E when it starts with 0/1 and passes the UPC-E check, else EAN-8. "Type the number" is also offered under the camera, for damaged barcodes or a blocked camera.
 
 ## Data model
 
 - 2026-11-04: `PullEvent` is the record of who changed a pull item; `PullItem` has no `updatedBy`. `PullItem.product` is required, so an unknown code still gets a `Product` row (`lookupStatus: NOT_FOUND`).
-- 2026-11-13: Products are keyed by `gtin` (14 digits, zero-padded), so the UPC-A, EAN-13 and expanded UPC-E of one item share a row and one API lookup. `barcodeFormat` + `barcodeValue` keep the exact scanned barcode for reprinting. `Product` is shared by all stores and holds only lookup data; a store's own name, SKU, location and `leadDays` (overrides `Store.defaultLeadDays`) live on `StoreProduct`. `FOUND` is never re-fetched, `NOT_FOUND` is retried after a while, `FAILED` on the next scan.
+- 2026-11-13: Products are keyed by `gtin` (14 digits, zero-padded), so the UPC-A, EAN-13 and expanded UPC-E of one item share a row and one API lookup. `barcodeFormat` + `barcodeValue` keep the exact scanned barcode for reprinting. `Product` is shared by all stores and holds only lookup data; a store's own name, SKU, location and `leadDays` (overrides `Store.defaultLeadDays`) live on `StoreProduct`. A product already in our database is never looked up again, whatever its `lookupStatus`.
 - 2026-11-07: `User.username` is unique across all stores.
 
 ## Not built yet

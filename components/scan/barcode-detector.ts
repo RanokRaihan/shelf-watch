@@ -3,10 +3,23 @@ import type {
   BarcodeFormat,
 } from "barcode-detector/ponyfill";
 
+import type { BarcodeFormat as ProductBarcodeFormat } from "@/lib/barcode/gtin";
+
 // Retail product codes only; ZXing and the native detector both verify the check digit.
 const FORMATS: BarcodeFormat[] = ["ean_13", "ean_8", "upc_a", "upc_e"];
 
 export type Detector = Pick<PonyfillDetector, "detect">;
+
+const PRODUCT_FORMATS: Partial<Record<BarcodeFormat, ProductBarcodeFormat>> = {
+  ean_13: "EAN_13",
+  ean_8: "EAN_8",
+  upc_a: "UPC_A",
+  upc_e: "UPC_E",
+};
+
+export function toProductFormat(format: BarcodeFormat): ProductBarcodeFormat | undefined {
+  return PRODUCT_FORMATS[format];
+}
 
 let detectorPromise: Promise<Detector> | null = null;
 

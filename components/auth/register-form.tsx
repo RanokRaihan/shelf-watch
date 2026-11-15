@@ -10,7 +10,7 @@ import {
   TextField,
   isFieldInvalid,
   toFieldErrors,
-} from "@/components/auth/text-field";
+} from "@/components/form/text-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
