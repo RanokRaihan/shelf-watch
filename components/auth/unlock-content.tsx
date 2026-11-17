@@ -17,7 +17,7 @@ import { getDevice, getSession } from "@/lib/auth/session";
 // devices here, and a revoked device must not bounce between the two. Reads
 // cookies, so render it inside Suspense (cacheComponents).
 export async function UnlockContent() {
-  if (await getSession()) redirect("/today");
+  if (await getSession()) redirect("/pulls");
 
   const device = await getDevice();
 

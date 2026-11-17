@@ -11,7 +11,7 @@ import { PIN_LENGTH } from "@/lib/validations/register.validation";
 
 // PIN unlock (docs/auth-flow.md 4.4). Submits only from the Unlock button (or
 // Enter), never on its own when the boxes fill. On success the action
-// redirects to /today. On failure the boxes clear and refocus.
+// redirects to /pulls. On failure the boxes clear and refocus.
 export function PinForm() {
   const router = useRouter();
   const [pin, setPin] = useState("");

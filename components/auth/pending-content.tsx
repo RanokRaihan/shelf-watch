@@ -12,11 +12,11 @@ import {
 import { getDevice, getSession } from "@/lib/auth/session";
 
 // `/pending`: a joined colleague waiting for approval (docs/auth-flow.md 4.3
-// step 5). Only pending devices stay; everyone else goes to /today or
+// step 5). Only pending devices stay; everyone else goes to /pulls or
 // /unlock, which handles trusted, revoked and unknown phones. Never sends
 // anyone to `/`. Reads cookies, so render it inside Suspense (cacheComponents).
 export async function PendingContent() {
-  if (await getSession()) redirect("/today");
+  if (await getSession()) redirect("/pulls");
 
   const device = await getDevice();
   if (device.state !== "pending") redirect("/unlock");

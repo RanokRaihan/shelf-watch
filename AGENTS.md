@@ -47,9 +47,9 @@ Barcode-scan tool for retail teams to track product pull dates. This file holds 
 
 ## Folder layout
 
-- `app/`: routes only. `(auth)/` holds guest and entry pages (`/register`, `/sign-in`, `/join/[token]`, `/unlock`, `/pending`); `(app)/` holds signed-in pages (`/today`, `/scan`, `/manage/*`). Manager pages with the tab bar are in `(app)/manage/(tabs)/`; `/manage/login` sits outside it.
+- `app/`: routes only. `(auth)/` holds guest and entry pages (`/register`, `/sign-in`, `/join/[token]`, `/unlock`, `/pending`); `(app)/` holds signed-in pages (`/pulls`, `/scan`, `/manage/*`). The pull list tabs (`/pulls`, `/pulls/previous`, `/pulls/upcoming`) share `(app)/pulls/layout.tsx`. Manager pages with the tab bar are in `(app)/manage/(tabs)/`; `/manage/login` sits outside it.
 - `actions/`: server actions, one `"use server"` file per feature, named `<feature>.action.ts`. Never inside `app/`.
-- `components/<feature>/` (`auth/`, `today/`, `scan/`, `manage/`): page sections, guards and skeletons. `components/layout/`: shared app chrome. `components/form/`: form fields shared across features. `components/ui/`: shadcn components.
+- `components/<feature>/` (`auth/`, `pulls/`, `scan/`, `manage/`): page sections, guards and skeletons. `components/layout/`: shared app chrome. `components/form/`: form fields shared across features. `components/ui/`: shadcn components.
 - `lib/`: all database and business logic, as plain functions.
   - `db.ts` (the single Prisma client; don't create another) and `utils.ts` (shadcn `cn`) stay at the root.
   - `core/`: action plumbing and app-wide server helpers (`action-result`, `safe-action`, `errors`, `app-url`).
@@ -62,7 +62,7 @@ Barcode-scan tool for retail teams to track product pull dates. This file holds 
 - Server actions and route handlers only call `lib/` functions. No Prisma calls in components or actions.
 - File names: kebab-case base name plus a dot role suffix (`store-invite.action.ts`). Don't use `_` (a leading `_` marks a private folder in `app/`).
 - Keep `page.tsx` and `layout.tsx` thin: metadata, the page shell, `Suspense` boundaries, and composing components. A section's skeleton is exported from the same file as the section.
-- Use shadcn components and theme tokens (`bg-background`, `bg-muted`, `bg-primary`, `text-muted-foreground`, …). No hardcoded colors, and `primary` is the only accent. Exception: the QR code and its printed text are fixed black on white so they stay scannable, and the camera frame, scrim and spinner over live video are fixed black/white.
+- Use shadcn components and theme tokens (`bg-background`, `bg-muted`, `bg-primary`, `text-muted-foreground`, …). No hardcoded colors, and `primary` is the only accent. Exception: the QR code, product barcodes and their printed text are fixed black on white so they stay scannable, and the camera frame, scrim and spinner over live video are fixed black/white.
 - `components/ui/` has only `button`, `input`, `label`, `card`, `separator`, `field`, `select`, `sonner`, `dropdown-menu`, `alert-dialog`, `popover`, `calendar`, `collapsible`, `toggle`, `toggle-group`. Add more only when asked.
 - `button` and `input` keep shadcn's stock sizes (button `h-8`, `sm` `h-7`, `lg` `h-9`; input `h-8`). Set phone-first touch sizes where they're used with `className` (`h-12 text-base`).
 - Don't change theme colors or radius in `app/globals.css`; Ranok sets those.
@@ -75,10 +75,10 @@ Barcode-scan tool for retail teams to track product pull dates. This file holds 
 
 Every page calls its own guard from `lib/auth/session.ts` in a `Suspense` child that wraps its content, never in a layout.
 
-- Private pages (`/today`, `/scan`): `requireSession()`. No session goes to `/unlock`.
-- Manager pages (`/manage/*`): `requireManager()`. Colleagues go to `/today`; managers without recent password access go to `/manage/login`.
+- Private pages (`/pulls`, `/scan`): `requireSession()`. No session goes to `/unlock`.
+- Manager pages (`/manage/*`): `requireManager()`. Colleagues go to `/pulls`; managers without recent password access go to `/manage/login`.
 - `/manage/login`: `requireManagerLogin()`. A manager who already has access goes to `/manage`.
-- Guest-only pages (`/register`, `/sign-in`, `/join/[token]`): `requireGuest()`. A session goes to `/today`, a trusted device to `/unlock`, a pending one to `/pending`.
+- Guest-only pages (`/register`, `/sign-in`, `/join/[token]`): `requireGuest()`. A session goes to `/pulls`, a trusted device to `/unlock`, a pending one to `/pending`.
 - Entry pages: `/` (`getEntryRoute()`), `/unlock` and `/pending`. They never send anyone to `/`, so a revoked device can't loop.
 - Mutations check too, since actions can be called without the page: guest-only ones call `assertGuest()`, private ones `getSession()` / `requireSession()`, manager ones `requireManager()`.
 - Hiding a link (like "Manage store" in the user menu) is cosmetic. The page guard is what protects it.

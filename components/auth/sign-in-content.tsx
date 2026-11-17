@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SignInForm } from "@/components/auth/sign-in-form";
 import { requireGuest } from "@/lib/auth/session";
 
-// Session goes to /today, trusted device to /unlock, pending to /pending. Render inside Suspense.
+// Session goes to /pulls, trusted device to /unlock, pending to /pending. Render inside Suspense.
 export async function SignInContent() {
   await requireGuest();
 
