@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: PRODUCT_IMAGE_HOSTS.map((hostname) => ({ protocol: "https", hostname })),
   },
+  experimental: {
+    agentUpgrade: "security",
+  },
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
