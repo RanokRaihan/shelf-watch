@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { signInAction } from "@/actions/sign-in.action";
-import { TextField } from "@/components/auth/text-field";
+import { TextField } from "@/components/form/text-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FieldError, FieldGroup } from "@/components/ui/field";

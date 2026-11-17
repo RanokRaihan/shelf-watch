@@ -42,3 +42,9 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
+
+# scanner wasm, copied from zxing-wasm on postinstall
+/public/zxing_reader.wasm
+
+# next dev --experimental-https
+/certificates

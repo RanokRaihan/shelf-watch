@@ -1,3 +1,7 @@
+import { ScanBarcode } from "lucide-react";
+import Link from "next/link";
+
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardDescription,
@@ -17,6 +21,16 @@ export async function TodayContent() {
         <h1 className="text-3xl font-bold tracking-tight">Today</h1>
         <p className="text-base text-muted-foreground">{user.store.name}</p>
       </div>
+      <Link
+        href="/scan"
+        className={buttonVariants({
+          size: "lg",
+          className: "h-20 w-full gap-3 text-xl [&_svg:not([class*='size-'])]:size-7",
+        })}
+      >
+        <ScanBarcode aria-hidden="true" />
+        Scan product
+      </Link>
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">Nothing here yet</CardTitle>
@@ -34,6 +48,7 @@ export function TodaySkeleton() {
     <div className="flex flex-col gap-2" aria-hidden="true">
       <div className="h-9 w-32 animate-pulse rounded-md bg-muted" />
       <div className="h-6 w-48 animate-pulse rounded-md bg-muted" />
+      <div className="mt-4 h-20 w-full animate-pulse rounded-lg bg-muted" />
     </div>
   );
 }

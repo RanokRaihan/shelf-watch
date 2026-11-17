@@ -14,6 +14,7 @@ Barcode-scan tool for retail teams to track product pull dates. This file holds 
 
 ## Keeping this file lean
 
+- After finishing a task, list every changed file grouped by review priority. High, Medium and Skip.
 - Update this file only when a command, rule, the folder layout, or a gotcha changes. Don't list files or describe what a component renders; that's what the code is for.
 - Record architecture decisions in `docs/decisions.md`. When one changes, edit or replace its entry instead of appending, so it only says what's true now.
 - Aim to keep this file around 150 lines. If a section grows, move the detail to `docs/` and link it.
@@ -21,8 +22,8 @@ Barcode-scan tool for retail teams to track product pull dates. This file holds 
 
 ## Commands
 
-- `npm run dev` (dev server), `npm run build`, `npm run lint`. There's no test script.
-- `npm install` runs `prisma generate` (`postinstall`). The Prisma CLI config is `prisma7.config.ts` (schema and migrations paths, `DATABASE_URL` via dotenv).
+- `npm run dev` (dev server), `npm run dev:https` (self-signed HTTPS, for the camera on LAN phones), `npm run build`, `npm run lint`. There's no test script.
+- `npm install` runs `prisma generate` and copies the scanner's `zxing_reader.wasm` into `public/` (`postinstall`, gitignored). The Prisma CLI config is `prisma7.config.ts` (schema and migrations paths, `DATABASE_URL` via dotenv).
 - Don't run migrations. Ranok runs them, or approves a one-time exception.
 
 ## Stack
@@ -46,13 +47,13 @@ Barcode-scan tool for retail teams to track product pull dates. This file holds 
 
 ## Folder layout
 
-- `app/`: routes only. `(auth)/` holds guest and entry pages (`/register`, `/sign-in`, `/join/[token]`, `/unlock`, `/pending`); `(app)/` holds signed-in pages (`/today`, `/manage/*`). Manager pages with the tab bar are in `(app)/manage/(tabs)/`; `/manage/login` sits outside it.
+- `app/`: routes only. `(auth)/` holds guest and entry pages (`/register`, `/sign-in`, `/join/[token]`, `/unlock`, `/pending`); `(app)/` holds signed-in pages (`/today`, `/scan`, `/manage/*`). Manager pages with the tab bar are in `(app)/manage/(tabs)/`; `/manage/login` sits outside it.
 - `actions/`: server actions, one `"use server"` file per feature, named `<feature>.action.ts`. Never inside `app/`.
-- `components/<feature>/` (`auth/`, `today/`, `manage/`): page sections, guards and skeletons. `components/layout/`: shared app chrome. `components/ui/`: shadcn components.
+- `components/<feature>/` (`auth/`, `today/`, `scan/`, `manage/`): page sections, guards and skeletons. `components/layout/`: shared app chrome. `components/form/`: form fields shared across features. `components/ui/`: shadcn components.
 - `lib/`: all database and business logic, as plain functions.
   - `db.ts` (the single Prisma client; don't create another) and `utils.ts` (shadcn `cn`) stay at the root.
   - `core/`: action plumbing and app-wide server helpers (`action-result`, `safe-action`, `errors`, `app-url`).
-  - `auth/`: auth, sessions, devices and secrets. `store/`: store management (members, invites, QR). `format/`: pure display helpers, safe on client and server. `validations/`: Zod schemas, named `<feature>.validation.ts`.
+  - `auth/`: auth, sessions, devices and secrets. `store/`: store management (members, invites, QR). `format/`: pure display helpers, safe on client and server. `barcode/`: GTIN parsing (pure). `products/`: products and third-party lookup providers. `pulls/`: pull items and date math (`pull-dates.ts` is pure). `validations/`: Zod schemas, named `<feature>.validation.ts`.
   - A new feature gets its own folder (for example `lib/pulls/pull-items.ts`).
   - Import with the full path (`@/lib/auth/session`). No barrel `index.ts` files.
 
@@ -61,8 +62,8 @@ Barcode-scan tool for retail teams to track product pull dates. This file holds 
 - Server actions and route handlers only call `lib/` functions. No Prisma calls in components or actions.
 - File names: kebab-case base name plus a dot role suffix (`store-invite.action.ts`). Don't use `_` (a leading `_` marks a private folder in `app/`).
 - Keep `page.tsx` and `layout.tsx` thin: metadata, the page shell, `Suspense` boundaries, and composing components. A section's skeleton is exported from the same file as the section.
-- Use shadcn components and theme tokens (`bg-background`, `bg-muted`, `bg-primary`, `text-muted-foreground`, …). No hardcoded colors, and `primary` is the only accent. Exception: the QR code and its printed text are fixed black on white so they stay scannable.
-- `components/ui/` has only `button`, `input`, `label`, `card`, `separator`, `field`, `select`, `sonner`, `dropdown-menu`, `alert-dialog`. Add more only when asked.
+- Use shadcn components and theme tokens (`bg-background`, `bg-muted`, `bg-primary`, `text-muted-foreground`, …). No hardcoded colors, and `primary` is the only accent. Exception: the QR code and its printed text are fixed black on white so they stay scannable, and the camera frame, scrim and spinner over live video are fixed black/white.
+- `components/ui/` has only `button`, `input`, `label`, `card`, `separator`, `field`, `select`, `sonner`, `dropdown-menu`, `alert-dialog`, `popover`, `calendar`, `collapsible`, `toggle`, `toggle-group`. Add more only when asked.
 - `button` and `input` keep shadcn's stock sizes (button `h-8`, `sm` `h-7`, `lg` `h-9`; input `h-8`). Set phone-first touch sizes where they're used with `className` (`h-12 text-base`).
 - Don't change theme colors or radius in `app/globals.css`; Ranok sets those.
 - Comments: only when the code isn't clear on its own, one short line. No multi-line or block comments.
@@ -74,7 +75,7 @@ Barcode-scan tool for retail teams to track product pull dates. This file holds 
 
 Every page calls its own guard from `lib/auth/session.ts` in a `Suspense` child that wraps its content, never in a layout.
 
-- Private pages (`/today`): `requireSession()`. No session goes to `/unlock`.
+- Private pages (`/today`, `/scan`): `requireSession()`. No session goes to `/unlock`.
 - Manager pages (`/manage/*`): `requireManager()`. Colleagues go to `/today`; managers without recent password access go to `/manage/login`.
 - `/manage/login`: `requireManagerLogin()`. A manager who already has access goes to `/manage`.
 - Guest-only pages (`/register`, `/sign-in`, `/join/[token]`): `requireGuest()`. A session goes to `/today`, a trusted device to `/unlock`, a pending one to `/pending`.
@@ -121,6 +122,7 @@ Every page calls its own guard from `lib/auth/session.ts` in a `Suspense` child 
 - iOS Safari doesn't open the keyboard on a programmatic focus without a tap.
 - To keep focus during a pending submit, make the input `readOnly`, not `disabled`.
 - The Clipboard API isn't available on LAN http; fall back to `execCommand("copy")`.
+- The camera (`getUserMedia`) needs HTTPS or localhost. Test `/scan` on phones with `npm run dev:https` (accept the cert warning once).
 
 ### UI
 

@@ -76,7 +76,7 @@ const sessionInclude = {
       username: true,
       role: true,
       status: true,
-      store: { select: { id: true, name: true, timezone: true } },
+      store: { select: { id: true, name: true, timezone: true, defaultLeadDays: true } },
     },
   },
   device: {

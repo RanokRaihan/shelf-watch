@@ -101,37 +101,51 @@ model Session {
 }
 
 model Product {
-  upc           String         @id
+  gtin          String         @id // 14 digits, zero-padded; UPC-A, UPC-E and EAN-13 of one item share it
+  barcodeFormat BarcodeFormat
+  barcodeValue  String // digits exactly as scanned, check digit included; what we print
   name          String?
   brand         String?
+  size          String? // "80 sheets", "12 fl oz"
   category      String?
-  source        String?
-  fetchedAt     DateTime       @default(now())
+  imageUrl      String? // link to the source's image, not a copy
+  lookupStatus  LookupStatus
+  source        ProductSource?
+  sourceData    Json? // raw API response
+  lookedUpAt    DateTime
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   pullItems     PullItem[]
   storeProducts StoreProduct[]
 }
 
 model StoreProduct {
-  id           String  @id @default(cuid())
-  storeId      String
-  store        Store   @relation(fields: [storeId], references: [id])
-  upc          String
-  product      Product @relation(fields: [upc], references: [upc])
-  itemNumber   String?
-  aisle        String?
-  categoryName String?
-  section      String?
-  shelf        String?
+  id            String    @id @default(cuid())
+  storeId       String
+  store         Store     @relation(fields: [storeId], references: [id])
+  gtin          String
+  product       Product   @relation(fields: [gtin], references: [gtin])
+  name          String? // the store's own name; overrides Product.name
+  itemNumber    String? // the store's SKU
+  categoryName  String?
+  aisle         String?
+  section       String?
+  shelf         String?
+  leadDays      Int? // overrides Store.defaultLeadDays for this item
+  lastScannedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  @@unique([storeId, upc])
+  @@unique([storeId, gtin])
+  @@index([storeId, aisle])
 }
 
 model PullItem {
   id          String      @id @default(cuid())
   storeId     String
   store       Store       @relation(fields: [storeId], references: [id])
-  upc         String
-  product     Product     @relation(fields: [upc], references: [upc])
+  gtin        String
+  product     Product     @relation(fields: [gtin], references: [gtin])
   productName String?
   expiryDate  DateTime?   @db.Date
   pullDate    DateTime    @db.Date
@@ -181,4 +195,22 @@ enum PullAction {
   EDITED
   PULLED
   SKIPPED
+}
+
+enum BarcodeFormat {
+  UPC_A
+  UPC_E
+  EAN_13
+  EAN_8
+}
+
+enum LookupStatus {
+  FOUND
+  NOT_FOUND
+  FAILED
+}
+
+enum ProductSource {
+  OPEN_FOOD_FACTS
+  UPCITEMDB
 }
