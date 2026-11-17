@@ -5,9 +5,16 @@ import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { formatDay } from "@/lib/format/calendar-day";
-import type { MarkPullStatus, PullItemCard as PullItem } from "@/lib/pulls/pull-items";
+import type {
+  MarkPullStatus,
+  PullItemCard as PullItem,
+} from "@/lib/pulls/pull-items";
 
 // `barcodeSvg` is rendered on the server; null when the value couldn't be encoded.
 export type PullItemCardData = PullItem & { barcodeSvg: string | null };
@@ -19,7 +26,11 @@ type PullItemCardProps = {
 };
 
 function locationText({ aisle, section, shelf }: PullItem): string {
-  return [aisle && `Aisle ${aisle}`, section && `Section ${section}`, shelf && `Shelf ${shelf}`]
+  return [
+    aisle && `Aisle ${aisle}`,
+    section && `Section ${section}`,
+    shelf && `Shelf ${shelf}`,
+  ]
     .filter(Boolean)
     .join(" · ");
 }
@@ -47,7 +58,7 @@ function Detail({ label, value }: { label: string; value: string | null }) {
   return (
     <div className="flex flex-col">
       <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-base break-words">{value ?? "Not set"}</dd>
+      <dd className="text-base wrap-break-word">{value ?? "Not set"}</dd>
     </div>
   );
 }
@@ -60,17 +71,17 @@ function MoreDetails({ item }: { item: PullItem }) {
           <Button
             type="button"
             variant="ghost"
-            className="group h-11 w-full justify-between px-0 text-base hover:bg-transparent"
+            className="group h-11 w-full justify-between px-0 text-base hover:bg-transparent bg-none"
           />
         }
       >
         More details
         <ChevronDown
           aria-hidden="true"
-          className="transition-transform group-data-panel-open:rotate-180"
+          className="transition-transform duration-200 ease-out group-data-panel-open:rotate-180 motion-reduce:transition-none"
         />
       </CollapsibleTrigger>
-      <CollapsibleContent>
+      <CollapsibleContent className="h-(--collapsible-panel-height) overflow-hidden transition-[height] duration-200 ease-out data-ending-style:h-0 data-starting-style:h-0 motion-reduce:transition-none">
         <dl className="grid grid-cols-2 gap-3 pb-3">
           <Detail label="Category" value={item.category} />
           <Detail label="Item number" value={item.itemNumber} />
@@ -92,9 +103,13 @@ export function PullItemCard({ item, onMark }: PullItemCardProps) {
         <div className="flex gap-3">
           <ProductImage src={item.imageUrl} name={item.name} />
           <div className="flex min-w-0 flex-col gap-0.5">
-            <p className="text-base font-medium break-words">{item.name}</p>
-            {details && <p className="text-sm text-muted-foreground break-words">{details}</p>}
-            {location && <p className="text-sm break-words">{location}</p>}
+            <p className="text-base font-medium wrap-break-word">{item.name}</p>
+            {details && (
+              <p className="text-sm text-muted-foreground wrap-break-word">
+                {details}
+              </p>
+            )}
+            {location && <p className="text-sm wrap-break-word">{location}</p>}
           </div>
         </div>
         <MoreDetails item={item} />
@@ -106,7 +121,9 @@ export function PullItemCard({ item, onMark }: PullItemCardProps) {
             dangerouslySetInnerHTML={{ __html: item.barcodeSvg }}
           />
         ) : (
-          <p className="text-center font-mono text-base tracking-wider">{item.barcodeValue}</p>
+          <p className="text-center font-mono text-base tracking-wider">
+            {item.barcodeValue}
+          </p>
         )}
         <div className="grid grid-cols-2 gap-2">
           <div className="flex flex-col">
@@ -117,7 +134,9 @@ export function PullItemCard({ item, onMark }: PullItemCardProps) {
           </div>
           <div className="flex flex-col">
             <span className="text-sm text-muted-foreground">Pull on</span>
-            <span className="text-base font-medium">{formatDay(item.pullDate)}</span>
+            <span className="text-base font-medium">
+              {formatDay(item.pullDate)}
+            </span>
           </div>
         </div>
       </CardContent>
@@ -127,7 +146,11 @@ export function PullItemCard({ item, onMark }: PullItemCardProps) {
             <Check aria-hidden="true" />
             Pulled
           </Button>
-          <Button variant="outline" onClick={() => onMark("SKIPPED")} className="h-12 text-base">
+          <Button
+            variant="outline"
+            onClick={() => onMark("SKIPPED")}
+            className="h-12 text-base"
+          >
             <SkipForward aria-hidden="true" />
             Skip
           </Button>
