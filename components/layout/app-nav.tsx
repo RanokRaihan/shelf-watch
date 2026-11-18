@@ -15,7 +15,7 @@ export function AppNav() {
         aria-label="Main"
         className={cn(APP_CONTAINER, "flex items-center justify-between")}
       >
-        <Link href="/today" className="inline-flex h-14 items-center text-lg font-bold">
+        <Link href="/pulls" className="inline-flex h-14 items-center text-lg font-bold">
           ShelfWatch
         </Link>
         <div className="flex items-center gap-2">

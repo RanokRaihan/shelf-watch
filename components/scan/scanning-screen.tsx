@@ -29,7 +29,7 @@ export function ScanningScreen({
           <Keyboard aria-hidden="true" />
           Type the number
         </Button>
-        <Link href="/today" className={buttonVariants({ variant: "ghost", className: SCREEN_BUTTON_CLASS })}>
+        <Link href="/pulls" className={buttonVariants({ variant: "ghost", className: SCREEN_BUTTON_CLASS })}>
           <ArrowLeft aria-hidden="true" />
           Back to today
         </Link>

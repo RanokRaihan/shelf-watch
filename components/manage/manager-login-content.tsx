@@ -9,7 +9,7 @@ import {
 import { requireManagerLogin } from "@/lib/auth/session";
 
 // Only a signed-in manager without current manager access gets here: no
-// session goes to /unlock, colleagues to /today, and a manager who already
+// session goes to /unlock, colleagues to /pulls, and a manager who already
 // has access to /manage. Render it inside Suspense (cacheComponents).
 export async function ManagerLoginContent() {
   await requireManagerLogin();

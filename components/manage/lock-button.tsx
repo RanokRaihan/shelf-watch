@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { managerLockAction } from "@/actions/manager-lock.action";
 import { Button } from "@/components/ui/button";
 
-// Ends manager access on this phone and goes to /today. The label is hidden
+// Ends manager access on this phone and goes to /pulls. The label is hidden
 // on small screens; the icon and aria-label stay.
 export function LockButton() {
   const [isPending, startTransition] = useTransition();

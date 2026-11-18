@@ -154,12 +154,12 @@ export function hasManagerAccess(auth: AuthContext): boolean {
 
 /**
  * Guard for manager pages (docs/auth-flow.md 3, second helper). No session
- * goes to `/unlock`, the wrong role to `/today`, and a manager whose access
+ * goes to `/unlock`, the wrong role to `/pulls`, and a manager whose access
  * ran out to the password screen at `/manage/login`.
  */
 export async function requireManager(): Promise<AuthContext> {
   const auth = await requireSession();
-  if (auth.user.role !== "MANAGER") redirect("/today");
+  if (auth.user.role !== "MANAGER") redirect("/pulls");
   if (!hasManagerAccess(auth)) redirect("/manage/login");
   return auth;
 }
@@ -170,7 +170,7 @@ export async function requireManager(): Promise<AuthContext> {
  */
 export async function requireManagerLogin(): Promise<AuthContext> {
   const auth = await requireSession();
-  if (auth.user.role !== "MANAGER") redirect("/today");
+  if (auth.user.role !== "MANAGER") redirect("/pulls");
   if (hasManagerAccess(auth)) redirect("/manage");
   return auth;
 }
@@ -219,15 +219,15 @@ export async function getDevice(): Promise<DeviceState> {
   return { state: "trusted", ...owner };
 }
 
-export type EntryRoute = "/today" | "/unlock" | "/pending";
+export type EntryRoute = "/pulls" | "/unlock" | "/pending";
 
 /**
- * Where `/` should send this visitor: `/today` with a valid session,
+ * Where `/` should send this visitor: `/pulls` with a valid session,
  * `/unlock` for a trusted device, `/pending` for a device waiting for
  * approval, or null to show the landing page.
  */
 export async function getEntryRoute(): Promise<EntryRoute | null> {
-  if (await getSession()) return "/today";
+  if (await getSession()) return "/pulls";
   const device = await getDevice();
   if (device.state === "trusted") return "/unlock";
   if (device.state === "pending") return "/pending";
@@ -236,7 +236,7 @@ export async function getEntryRoute(): Promise<EntryRoute | null> {
 
 /**
  * Guard for guest-only pages (`/register`, `/join/[token]`, `/sign-in`).
- * Sends a signed-in phone to `/today`, a trusted device to `/unlock` and a
+ * Sends a signed-in phone to `/pulls`, a trusted device to `/unlock` and a
  * pending one to `/pending`. Call it in the page's Suspense child, before rendering content.
  */
 export async function requireGuest(): Promise<void> {
@@ -251,7 +251,7 @@ export async function requireGuest(): Promise<void> {
  */
 export async function assertGuest(): Promise<void> {
   const route = await getEntryRoute();
-  if (route === "/today") {
+  if (route === "/pulls") {
     throw new AppError("FORBIDDEN", "You're already signed in.");
   }
   if (route === "/unlock") {

@@ -15,7 +15,7 @@ import {
   type SignInValues,
 } from "@/lib/validations/sign-in.validation";
 
-// Password sign-in (docs/auth-flow.md 4.12). On success the action redirects to /today.
+// Password sign-in (docs/auth-flow.md 4.12). On success the action redirects to /pulls.
 export function SignInForm() {
   const router = useRouter();
 

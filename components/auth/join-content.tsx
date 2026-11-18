@@ -4,7 +4,7 @@ import { getJoinStore } from "@/lib/auth/join";
 import { requireGuest } from "@/lib/auth/session";
 
 // `/join/[token]` (docs/auth-flow.md 4.3). The guard runs before the token is
-// checked, so a signed-in phone goes to /today and a trusted or pending one
+// checked, so a signed-in phone goes to /pulls and a trusted or pending one
 // to /unlock or /pending, even from an old QR. Reads cookies and params, so
 // render it inside Suspense (cacheComponents).
 export async function JoinContent({ params }: { params: Promise<{ token: string }> }) {

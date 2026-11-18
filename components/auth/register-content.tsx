@@ -3,7 +3,7 @@ import Link from "next/link";
 import { RegisterForm } from "@/components/auth/register-form";
 import { requireGuest } from "@/lib/auth/session";
 
-// Signed-in phones go to /today and trusted or pending devices to /unlock
+// Signed-in phones go to /pulls and trusted or pending devices to /unlock
 // before any of the form is rendered. Render it inside Suspense
 // (cacheComponents).
 export async function RegisterContent() {
