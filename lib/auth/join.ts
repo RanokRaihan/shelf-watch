@@ -3,12 +3,18 @@ import "server-only";
 import { connection } from "next/server";
 
 import type { Prisma } from "@/app/generated/prisma/client";
+import { SESSION_TTL_MS } from "@/lib/auth/auth-config";
 import { db } from "@/lib/db";
 import { AppError } from "@/lib/core/errors";
-import { hashSecret } from "@/lib/auth/passwords";
-import { assertGuest, setDeviceCookie } from "@/lib/auth/session";
+import { recordFailedPin } from "@/lib/auth/lockout";
+import { hashSecret, verifySecret } from "@/lib/auth/passwords";
+import { assertGuest, setAuthCookies, setDeviceCookie } from "@/lib/auth/session";
 import { hashToken, newToken } from "@/lib/auth/tokens";
-import { joinTokenSchema, type JoinValues } from "@/lib/validations/join.validation";
+import {
+  joinTokenSchema,
+  type JoinValues,
+  type RejoinValues,
+} from "@/lib/validations/join.validation";
 
 /**
  * Colleague joins a store (docs/auth-flow.md 4.3). The store always comes
@@ -100,4 +106,85 @@ export async function joinStore(values: JoinValues): Promise<JoinedColleague> {
 
   await setDeviceCookie(deviceToken);
   return joined;
+}
+
+const WRONG_LOGIN = "Wrong username or PIN.";
+
+// Checked when there's no real user, so every failure takes about as long.
+let dummyPinHash: Promise<string> | undefined;
+function getDummyPinHash() {
+  dummyPinHash ??= hashSecret("000000");
+  return dummyPinHash;
+}
+
+/**
+ * An existing ACTIVE member logs in on a phone with no device token
+ * (docs/auth-flow.md 4.7). The store comes from the join link. No approval:
+ * the member was already approved. On success the phone gets a new approved
+ * device and a session, and every other device of the user is revoked.
+ *
+ * Every failure, a lock included, shows the same message so the public QR
+ * can't be used to find usernames. Wrong PINs count toward the PIN lockout.
+ */
+export async function rejoinStore(values: RejoinValues): Promise<void> {
+  await assertGuest();
+
+  const invite = await findActiveInvite(db, values.token);
+  if (!invite) throw new AppError("NOT_FOUND", INVALID_LINK);
+
+  const user = await db.user.findFirst({
+    where: { username: values.username.trim().toLowerCase(), storeId: invite.storeId },
+    select: { id: true, status: true, pinHash: true, lockedUntil: true },
+  });
+
+  const now = Date.now();
+  const locked = !!user?.lockedUntil && user.lockedUntil.getTime() > now;
+
+  if (!user || user.status !== "ACTIVE" || locked) {
+    await verifySecret(values.pin, await getDummyPinHash());
+    throw new AppError("UNAUTHENTICATED", WRONG_LOGIN);
+  }
+
+  if (!(await verifySecret(values.pin, user.pinHash))) {
+    await recordFailedPin(user.id, now);
+    throw new AppError("UNAUTHENTICATED", WRONG_LOGIN);
+  }
+
+  const deviceToken = newToken();
+  const sessionToken = newToken();
+  const at = new Date(now);
+
+  await db.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: user.id },
+      data: { failedPinAttempts: 0, lockedUntil: null },
+    });
+    // One phone per member: the old device tokens stop working right away.
+    await tx.session.deleteMany({ where: { userId: user.id } });
+    await tx.device.updateMany({
+      where: { userId: user.id, revokedAt: null },
+      data: { revokedAt: at },
+    });
+    const device = await tx.device.create({
+      data: {
+        storeId: invite.storeId,
+        userId: user.id,
+        tokenHash: hashToken(deviceToken),
+        approvedAt: at,
+        lastSeenAt: at,
+      },
+      select: { id: true },
+    });
+    await tx.session.create({
+      data: {
+        id: hashToken(sessionToken),
+        userId: user.id,
+        deviceId: device.id,
+        lastActiveAt: at,
+        expiresAt: new Date(now + SESSION_TTL_MS),
+      },
+    });
+  });
+
+  await setAuthCookies({ deviceToken, sessionToken });
 }

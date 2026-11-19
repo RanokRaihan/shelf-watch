@@ -1,4 +1,4 @@
-import { JoinForm } from "@/components/auth/join-form";
+import { JoinPanel } from "@/components/auth/join-panel";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getJoinStore } from "@/lib/auth/join";
 import { requireGuest } from "@/lib/auth/session";
@@ -27,17 +27,7 @@ export async function JoinContent({ params }: { params: Promise<{ token: string 
     );
   }
 
-  return (
-    <>
-      <div className="flex flex-col gap-1">
-        <h1 className="text-3xl font-bold tracking-tight">Join {store.name}</h1>
-        <p className="text-base text-muted-foreground">
-          Your manager will approve you before you can start.
-        </p>
-      </div>
-      <JoinForm token={token} />
-    </>
-  );
+  return <JoinPanel token={token} storeName={store.name} />;
 }
 
 export function JoinSkeleton() {

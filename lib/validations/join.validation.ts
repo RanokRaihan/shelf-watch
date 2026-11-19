@@ -36,3 +36,12 @@ export const joinSchema = joinFields.refine(
 );
 
 export type JoinValues = z.infer<typeof joinSchema>;
+
+// An existing member logging in on a phone without a device token.
+export const rejoinSchema = z.object({
+  token: joinTokenSchema,
+  username: usernameSchema,
+  pin: pinSchema,
+});
+
+export type RejoinValues = z.infer<typeof rejoinSchema>;

@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { DEVICE_COOKIE, SESSION_TTL_MS } from "@/lib/auth/auth-config";
 import { db } from "@/lib/db";
 import { AppError } from "@/lib/core/errors";
-import { lockedMessage, afterFailedAttempt } from "@/lib/auth/lockout";
+import { lockedMessage, recordFailedPin } from "@/lib/auth/lockout";
 import { verifySecret } from "@/lib/auth/passwords";
 import { getSession, setAuthCookies } from "@/lib/auth/session";
 import { hashToken, newToken } from "@/lib/auth/tokens";
@@ -72,19 +72,7 @@ export async function unlockWithPin({ pin }: UnlockValues): Promise<void> {
   }
 
   if (!(await verifySecret(pin, user.pinHash))) {
-    // Atomic increment, so parallel guesses each count.
-    const { failedPinAttempts } = await db.user.update({
-      where: { id: user.id },
-      data: { failedPinAttempts: { increment: 1 } },
-      select: { failedPinAttempts: true },
-    });
-    const failure = afterFailedAttempt(failedPinAttempts, now, "PIN");
-    if (failure.lockedUntil) {
-      await db.user.update({
-        where: { id: user.id },
-        data: { lockedUntil: failure.lockedUntil },
-      });
-    }
+    const failure = await recordFailedPin(user.id, now);
     throw new AppError(failure.code, failure.message, { pin: [failure.message] });
   }
 

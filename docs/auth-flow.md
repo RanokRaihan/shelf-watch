@@ -131,11 +131,11 @@ Approval exists because the QR is universal. Without it, anyone with a photo of 
 2. Manager taps "Reset PIN" on that person (needs manager access).
 3. Next time the colleague opens the app on their trusted phone, they are asked to set a new PIN. The trusted device proves who they are, so no temporary PIN is needed.
 
-### 4.7 New phone
-1. Colleague scans the store QR on the new phone and enters their existing username and PIN.
-2. A new Device is created for their user with `approvedAt` empty.
-3. Manager approves the new device.
-4. The old phone can be revoked from the manager's device list.
+### 4.7 New phone (or lost device cookie)
+1. Colleague scans the store QR on the phone, taps "Log in" and enters their existing username and PIN.
+2. The user must belong to the link's store and be ACTIVE. Every failure shows "Wrong username or PIN."; wrong PINs count toward the PIN lockout.
+3. No approval: the user was already approved. A new approved Device is created and a session starts.
+4. In the same transaction, all the user's other devices are revoked and their sessions deleted, so a member has one phone at a time.
 
 ### 4.8 Forgot password (manager)
 Standard email reset link. This needs an email sending service set up before launch.
@@ -194,7 +194,7 @@ For a manager (or anyone with a password) on a browser that has no trusted devic
 
 ## 7. Known issues and open questions
 
-- **iOS home screen and cookies.** On iPhone, an app added to the home screen may not share cookies with Safari. A colleague who joins in Safari through the QR and then adds the app to the home screen may open it with no device token. Test this on a real iPhone. A possible fix: after joining, Safari shows a short one-time link code (valid about 10 minutes), and the home screen app asks for it on first open if it has no device token.
+- **iOS home screen and cookies.** On iPhone, an app added to the home screen may not share cookies with Safari. A colleague who joins in Safari through the QR and then adds the app to the home screen may open it with no device token. Test this on a real iPhone. The member can scan the QR again and use "Log in" (4.7), which revokes the Safari device.
 - **Offline.** PIN checks need a network connection. For version 1, show a clear "No connection" message. Offline unlock is a later feature.
 - **MODERATOR role.** What a moderator can do is not decided yet. If moderators can do anything that needs manager access, they also need an email and password, and the manager check must include them.
 - **Phone number.** Required on every user and unique. Stored as E.164 (for example `+12155551234`). Used for the daily morning text to the manager.

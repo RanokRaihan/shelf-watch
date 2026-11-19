@@ -9,6 +9,7 @@ A quick snapshot as of 2026-11-17. For how things work, see `docs/auth-flow.md` 
 - Show, print and rotate the store's join link and QR [`/manage/members/invite`]
 - Unlock with a 4-digit PIN, with lockout after wrong tries [`/unlock`]
 - Manager sign-in with password on a new browser [`/sign-in`]
+- Member login on a new phone (or after losing the device cookie) with username + PIN from the store QR; other phones are logged out [`/join/[token]`]
 - Manager access by password for 15 minutes, plus Lock [`/manage/login`]
 - Log out (keeps the phone trusted) [user menu]
 - Approve, reject and remove members [`/manage/members`]
@@ -34,7 +35,6 @@ A quick snapshot as of 2026-11-17. For how things work, see `docs/auth-flow.md` 
 
 - Reset PIN (planned): without it, a colleague who forgets their PIN is locked out for good.
 - Password reset by email (planned): a manager who forgets their password loses all manager access.
-- New phone flow (planned): a colleague who switches phones can't rejoin with their existing account.
 - Rate limiting (planned): the join form is open to spam until this exists.
 
 ### Should Have

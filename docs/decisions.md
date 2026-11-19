@@ -49,6 +49,7 @@ Current architecture decisions and why they were made. When a decision changes, 
 - 2026-11-08: Each page guards itself inside `Suspense`, never in a layout. Mutations check too, because actions can be called without the page. A phone with a trusted or pending device but no session counts as not a guest. No `proxy.ts`: the page checks are what keep content safe, and a cookie-only proxy would only skip the brief skeleton before a redirect.
 - 2026-11-08: Signup trusts the manager's phone and starts a session with 15 minutes of manager access in the same transaction as the store.
 - 2026-11-08: Log out ends only the session (Session row and `sw_session`); `sw_device` stays, so the user only needs their PIN next time.
+- 2026-11-18: New phone login (4.7): the join page has a Log in mode for existing members (username + PIN, store from the link token). No manager approval, since the member was already approved. Success creates an approved device and a session, and revokes every other device of the user (one phone per member). All failures, locks included, show "Wrong username or PIN." so the public QR can't find usernames; wrong PINs still count toward the PIN lockout. Accepted risk: anyone with the QR and a username can guess PINs, throttled only by the lockout.
 - 2026-11-08: PIN unlock submits only on the Unlock button or Enter, never when the boxes fill. Lockout uses existing columns: `failedPinAttempts` keeps counting across locks and resets only on a correct PIN, so `failedPinAttempts / 5` gives the step (1, 5, 15 min). Unlock replaces any old session on the device, so a phone has at most one. A PIN session has no manager access. Everyone lands on `/pulls` after unlocking.
 - 2026-11-08: Manager access needs the MANAGER role plus a password confirmed in the last 15 minutes (`Session.managerUntil`). Lock clears `managerUntil` and goes to `/pulls`; the PIN session stays. After the password it always returns to `/manage` (no `?next=` until there are more manager pages).
 - 2026-11-08: Joining creates a PENDING ASSOCIATE and an unapproved Device in the store found from the token on the server (the form never sends a store id), sets only `sw_device`, and the client goes to `/pending`. A revoked or unknown device can join again, replacing its `sw_device`.
@@ -99,7 +100,6 @@ Current architecture decisions and why they were made. When a decision changes, 
 ## Not built yet
 
 - Restore a removed member, reset PIN, promote, per-device revoke, ending a single session.
-- The New phone flow (auth-flow 4.7, existing username + PIN on the join page). A taken username just shows "This username is already taken".
 - Password reset by email (auth-flow 4.8), so `/sign-in` has no "Forgot password?" link.
 - Rate limiting. Join is open to spam until it's added.
 - A PWA manifest. When added, set `start_url` to `/pulls`.

@@ -59,7 +59,8 @@ export async function UnlockContent() {
         </CardTitle>
         <CardDescription className="text-base">
           This phone isn&apos;t set up for a store. Ask your manager to show
-          you the store&apos;s QR code, then scan it with your camera.
+          you the store&apos;s QR code, then scan it with your camera. Already
+          a member? Tap Log in on that page.
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -2,6 +2,7 @@ import "server-only";
 
 import { LOCK_STEPS_MS, MAX_FAILED_ATTEMPTS } from "@/lib/auth/auth-config";
 import type { ErrorCode } from "@/lib/core/action-result";
+import { db } from "@/lib/db";
 
 // Brute force protection shared by PIN and password (docs/auth-flow.md 5).
 // The failed count keeps going through each lock and resets only on success,
@@ -40,4 +41,18 @@ export function afterFailedAttempt(
     code: "UNAUTHENTICATED",
     message: `Wrong ${secret}. ${left} ${left === 1 ? "try" : "tries"} left.`,
   };
+}
+
+/** Counts a wrong PIN on the user (atomic, so parallel guesses each count) and saves any new lock. */
+export async function recordFailedPin(userId: string, now: number) {
+  const { failedPinAttempts } = await db.user.update({
+    where: { id: userId },
+    data: { failedPinAttempts: { increment: 1 } },
+    select: { failedPinAttempts: true },
+  });
+  const failure = afterFailedAttempt(failedPinAttempts, now, "PIN");
+  if (failure.lockedUntil) {
+    await db.user.update({ where: { id: userId }, data: { lockedUntil: failure.lockedUntil } });
+  }
+  return failure;
 }
